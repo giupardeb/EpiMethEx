@@ -1,69 +1,90 @@
-metilazione <- function() {
-  i <<- 1
-  data <<- list()
+calcFCGeneLinear <- function() {
+  df <- data.frame()
+  fc_UPvsMID = dfPancan2[475,] / dfPancan2[476,] #meansMID / meansUP
+  fc_UPvsDOWN = dfPancan2[474,] / dfPancan2[476,] #meansDOWN / meansUP
+  fc_MIDvsDOWN = dfPancan2[474,] / dfPancan2[475,] #meansDOWN / meansMID
   
-  switch(c('a','b','c','d','e','f','g')[fc_Test],
-         "a"={
-           #upvsmid
-           data <- ttester("UPvsMID",rowGeneUP,rowGeneMID)
-         },
-         "b"={
-           #upvsdown
-           data <- ttester("UPvsDOWN",rowGeneUP,rowGeneDOWN)
-         },
-         "d"={
-           #midvsdown
-           data <- ttester("MIDvsDOWN",rowGeneMID,rowGeneDOWN)
-         },
-         "c"={
-           #upvsmid
-           data <- ttester("UPvsMID",rowGeneUP,rowGeneMID)
-           #upvsdown
-           data <- ttester("UPvsDOWN",rowGeneUP,rowGeneDOWN)
-         },
-         "f"={
-           #upvsdown
-           data <- ttester("UPvsDOWN",rowGeneUP,rowGeneDOWN)
-           #midvsdown
-           data <- ttester("MIDvsDOWN",rowGeneMID,rowGeneDOWN)
-         },
-         "e"={
-           #upvsmid
-           data <- ttester("UPvsMID",rowGeneUP,rowGeneMID)
-           #midvsdown
-           data <- ttester("MIDvsDOWN",rowGeneMID,rowGeneDOWN)
-         },
-         {
-           #prendi tutti e tre gli array
-           data <- ttester("UPvsMID",rowGeneUP,rowGeneMID)
-           data <- ttester("UPvsDOWN",rowGeneUP,rowGeneDOWN)
-           data <- ttester("MIDvsDOWN",rowGeneMID,rowGeneDOWN)
-         })
+  df <- rbind(df, fc_UPvsMID)
+  df <- rbind(df, fc_UPvsDOWN)
+  df <- rbind(df, fc_MIDvsDOWN)
+  rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
+  dfPancan2 <- rbind(dfPancan2, df)
+  remove(df)
+  assign('dfPancan2', dfPancan2, envir = .GlobalEnv)
   
-  return(data)
 }
 
-ttester <- function(name,array1,array2){
-  if((sd(array1-array2) != 0)){
+calcFCGeneLog <- function() {
+  fc_UPvsMID = 2 ^ (abs(dfPancan2[475,] - dfPancan2[476,])) #meansMID / meansUP
+  fc_UPvsDOWN = 2 ^ (abs(dfPancan2[474,] - dfPancan2[476,])) #meansDOWN / meansUP
+  fc_MIDvsDOWN =  2 ^ (abs(dfPancan2[474,] - dfPancan2[475,])) #meansDOWN / meansMID
+  
+  df <- rbind(df, fc_UPvsMID)
+  df <- rbind(df, fc_UPvsDOWN)
+  df <- rbind(df, fc_MIDvsDOWN)
+  rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
+  dfPancan2 <- rbind(dfPancan2, df)
+  remove(df)
+  assign('dfPancan2', dfPancan2, envir = .GlobalEnv)
+  
+}
+
+ttester <- function(array1, array2, start, end) {
+  
+  if (sd(mapply('-', array1, array2, SIMPLIFY = T)) != 0) {
+    A <- t.test(array1, array2,
+                var.equal = F)[c('statistic', 'p.value')]
+    dfTtest[start:end, k] <- c(A$statistic, A$p.value)
     
-    ttester = t.test(array1, array2, var.equal=FALSE)
+    assign('dfTtest', dfTtest, envir = .GlobalEnv)
+  }
+  
+}
+
+
+getValueDFPancan2 <- function(nameGene, indexRowPancan2) {
+  #dobbiamo scrivere LA PRIMA PARTE DEL GENE IN JSON.
+  
+  rowname <- rownames(dfPancan2)
+  
+  outputJson[[numGene]]["name"] <- nameGene
+  
+  length <- length(indexRowPancan2)
+  
+  for (z in 1:length) {
+    nameRow <- rowname[indexRowPancan2[z]]
     
-    data[[i]] <- paste(paste("ttest",name,sep = "_"),ttester$statistic[[1]],sep = "=")
-    i<-i+1
-    data[[i]] <- paste(paste("pvalue",name,sep = "_"),ttester$p.value,sep = "=")
+    outputJson[[numGene]][nameRow] <-
+      dfPancan2[indexRowPancan2[z], nameGene]
+    
+  }
+
+  assign('outputJson', outputJson, envir = .GlobalEnv)
+}
+
+getValueDFFinale <- function(nameGene, indexRowDfFinale) {
+  
+  dim <- length(which(righeCheTiServono1$V22 == nameGene))
+  
+  #indexRowDfFinaleTMP <- indexRowDfFinale
+  
+  if (dim > 1)
+    #possono esistere Geni che non hanno CG
+  {
+    for (j in 1:dim) {
       
-  }
-  else{
-    #creare un JSON con il nome del gene ed l'errore riportato
-    errori = errori + 1
-    
-    data[[i]] <- paste("errore = ERRORE nel calcolare il Ttest")
-    i<-i+1
-  }
-  return(data)
-}
+      nameCG <-
+        righeCheTiServono1[which(righeCheTiServono1$V22 == nameGene),]$V1[j]
+      
+      outputJson[[numGene]][["CG"]][nameCG] <-
+        as.data.frame(DFfinale[indexRowDfFinale + 6 * (j - 1), nameGene])
 
-splitdf <- function(df, n) {
-  indx <- matrix(seq_len(ncol(df)), ncol = n)
-  lapply(seq_len(n), function(x) df[, indx[, x]])
+    }
+  }
+  else {
+    outputJson[[numGene]][["CG"]]["errore"] <-
+      "Questo gene non ha i corrispettivi CG"
+  }
+  
+  assign('outputJson', outputJson, envir = .GlobalEnv)
 }
