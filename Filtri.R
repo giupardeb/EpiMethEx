@@ -3,6 +3,7 @@ start.time <- Sys.time()
 library(jsonlite)
 FCuser <- 1.0
 GeniSelezionati <- c()
+p_valueUser <- 0
 
 source("functions.R")
 #il which ritorna 1,2,3 ciò su dfpancan2 si traducono come: 1=480, 2=481, 3=483
@@ -39,6 +40,7 @@ for (i in 1:dimDF) {
   numGene <<- paste("gene", i, sep = "")
   outputJson[[numGene]][["CG"]] <- list()
   outputJson[[numGene]] <- list()
+  
   
   namesGene <- colnames(DFfilterGene[, i, drop = F])
   
@@ -92,7 +94,7 @@ for (i in 1:dimDF) {
     getValueDFFinale(namesGene, c(5:6))
   }
 }
-
-write(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE), file = "test2.json")
+print(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE))
+#write(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE), file = "test2.json")
 end.time <- Sys.time()
 print(end.time - start.time)
