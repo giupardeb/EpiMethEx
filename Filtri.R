@@ -1,8 +1,6 @@
 start.time <- Sys.time()
 
-load(
-  "/home/giuseppe/Scrivania/TesiRepoGithub/utilitiesTesi/AnalisiMultigenica1giugno.Rdata"
-)
+load("/home/giuseppe/github/AnalisiMultigenica/AnalisiMultigenica1giugno.Rdata")
 library(jsonlite)
 library(mailR)
 
@@ -13,12 +11,11 @@ p_valueUser <- as.double(args[2])
 
 source("functions.R")
 #il which ritorna 1,2,3 ciò su dfpancan2 si traducono come: 1=480, 2=481, 3=483
-DFfilterGene <- data.frame(dfPancan2[480:482, ] >= FCuser)
+DFfilterGene <- data.frame(dfPancan2[480:482,] >= FCuser)
 
 if (p_valueUser != 0) {
-  
   DFfilterGene1 <-
-    data.frame(dfPancan2[c(484, 486, 488), ] >= p_valueUser)
+    data.frame(dfPancan2[c(484, 486, 488),] >= p_valueUser)
   
   #SI POTREBBE SOSTITUIRE ALL'INTERNO DI ANALISI TUTTI GLI NA IN FALSE
   DFfilterGene1[is.na(DFfilterGene1)] <- FALSE
@@ -33,13 +30,12 @@ if (p_valueUser != 0) {
     DFfilterGene[, which(!apply(DFfilterGene == F, 2, all))]
 }
 
-if(file.exists("geniSelezionti.txt")){
+if (file.exists("geniSelezionti.txt")) {
   GeniSelezionati <- readLines("geniSelezionti.txt")
 }
 
 
-if (exists("GeniSelezionati"))
-{
+if (exists("GeniSelezionati")) {
   GeniNonSelezionati <-
     GeniSelezionati[which(!GeniSelezionati %in% names(DFfilterGene))]
   
@@ -57,75 +53,70 @@ if (exists("GeniSelezionati"))
 dimDF <- ncol(DFfilterGene)
 outputJson <- list()
 
-etichette <<-
-  c(
-    "ttest_UPvsMID",
-    "pvalue_UPvsMID",
-    "ttest_UPvsDOWN",
-    "pvalue_UPvsDOWN",
-    "ttest_MIDvsDOWN",
-    "pvalue_MIDvsDOWN"
-  )
-
-for (i in 1:dimDF) {
-  #aggiungo un gene nel JSON
-  numGene <<- paste("gene", i, sep = "")
-  outputJson[[numGene]][["CG"]] <- list()
-  outputJson[[numGene]] <- list()
-  
-  
-  namesGene <- colnames(DFfilterGene[, i, drop = F])
-  
-  if (DFfilterGene[1, i] == "TRUE" &&
-      DFfilterGene[2, i] == "TRUE" &&
-      DFfilterGene[3, i] == "TRUE") {
-    #ELABORO TUTTO
+if (dimDF != 0) {
+  for (i in 1:dimDF) {
+    #aggiungo un gene nel JSON
+    numGene <<- paste("gene", i, sep = "")
+    outputJson[[numGene]][["CG"]] <- list()
+    outputJson[[numGene]] <- list()
     
-    getValueDFPancan2(namesGene, c(477:488))
-    getValueDFFinale(namesGene, c(1:6))
     
+    namesGene <- colnames(DFfilterGene[, i, drop = F])
+    
+    if (DFfilterGene[1, i] == "TRUE" &&
+        DFfilterGene[2, i] == "TRUE" &&
+        DFfilterGene[3, i] == "TRUE") {
+      #ELABORO TUTTO
+      
+      getValueDFPancan2(namesGene, c(477:488))
+      getValueDFFinale(namesGene, c(1:6))
+      
+    }
+    else if (DFfilterGene[1, i] == "TRUE" &&
+             DFfilterGene[2, i] == "TRUE") {
+      #ELABORO UPvsMID E UPvsDOWN
+      
+      getValueDFPancan2(namesGene, c(477:481, 483:486))
+      getValueDFFinale(namesGene, c(1:4))
+      
+    }
+    else if (DFfilterGene[1, i] == "TRUE" &&
+             DFfilterGene[3, i] == "TRUE") {
+      #ELABORO UPvsMID E MIDvsDOWN
+      
+      getValueDFPancan2(namesGene, c(477:480, 482:484, 487, 488))
+      getValueDFFinale(namesGene, c(1:2, 5:6))
+    }
+    else if (DFfilterGene[2, i] == "TRUE" &&
+             DFfilterGene[3, i] == "TRUE") {
+      #ELABORO UPvsDOWN E MIDvsDOWN
+      
+      getValueDFPancan2(namesGene, c(477:479, 481, 482, 485:488))
+      getValueDFFinale(namesGene, c(3:6))
+    }
+    else if (DFfilterGene[1, i] == "TRUE") {
+      #ELABORO UPvsMID
+      
+      getValueDFPancan2(namesGene, c(477:480, 483, 484))
+      getValueDFFinale(namesGene, c(1:2))
+    }
+    else if (DFfilterGene[2, i] == "TRUE") {
+      #ELABORO UPvsDOWN
+      
+      getValueDFPancan2(namesGene, c(477:479, 481, 485, 486))
+      getValueDFFinale(namesGene, c(3:4))
+    }
+    else if (DFfilterGene[3, i] == "TRUE") {
+      #ELABORO MIDvsDOWN
+      
+      getValueDFPancan2(namesGene, c(477:479, 482, 487, 488))
+      getValueDFFinale(namesGene, c(5:6))
+    }
   }
-  else if (DFfilterGene[1, i] == "TRUE" &&
-           DFfilterGene[2, i] == "TRUE") {
-    #ELABORO UPvsMID E UPvsDOWN
-    
-    getValueDFPancan2(namesGene, c(477:481, 483:486))
-    getValueDFFinale(namesGene, c(1:4))
-    
-  }
-  else if (DFfilterGene[1, i] == "TRUE" &&
-           DFfilterGene[3, i] == "TRUE") {
-    #ELABORO UPvsMID E MIDvsDOWN
-    
-    getValueDFPancan2(namesGene, c(477:480, 482:484, 487, 488))
-    getValueDFFinale(namesGene, c(1:2, 5:6))
-  }
-  else if (DFfilterGene[2, i] == "TRUE" &&
-           DFfilterGene[3, i] == "TRUE") {
-    #ELABORO UPvsDOWN E MIDvsDOWN
-    
-    getValueDFPancan2(namesGene, c(477:479, 481, 482, 485:488))
-    getValueDFFinale(namesGene, c(3:6))
-  }
-  else if (DFfilterGene[1, i] == "TRUE") {
-    #ELABORO UPvsMID
-    
-    getValueDFPancan2(namesGene, c(477:480, 483, 484))
-    getValueDFFinale(namesGene, c(1:2))
-  }
-  else if (DFfilterGene[2, i] == "TRUE") {
-    #ELABORO UPvsDOWN
-    
-    getValueDFPancan2(namesGene, c(477:479, 481, 485, 486))
-    getValueDFFinale(namesGene, c(3:4))
-  }
-  else if (DFfilterGene[3, i] == "TRUE") {
-    #ELABORO MIDvsDOWN
-    
-    getValueDFPancan2(namesGene, c(477:479, 482, 487, 488))
-    getValueDFFinale(namesGene, c(5:6))
-  }
+}else{
+  outputJson['errore'] <- "Il Gene che hai selezionato non soddisfa i parametri da te indicati"
 }
+
 #print(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE))
 write(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE), file = "test.json")
 
