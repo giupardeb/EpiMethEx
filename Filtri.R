@@ -1,24 +1,56 @@
 start.time <- Sys.time()
 
+load(
+  "/home/giuseppe/Scrivania/TesiRepoGithub/utilitiesTesi/AnalisiMultigenica1giugno.Rdata"
+)
 library(jsonlite)
-FCuser <- 1.0
-GeniSelezionati <- c()
-p_valueUser <- 0
+library(mailR)
+
+args <- commandArgs(TRUE)
+
+FCuser <- as.double(args[1])
+p_valueUser <- as.double(args[2])
 
 source("functions.R")
 #il which ritorna 1,2,3 ciò su dfpancan2 si traducono come: 1=480, 2=481, 3=483
-DFfilterGene <- data.frame(dfPancan2[480:482,] >= FCuser)
-DFfilterGene <-
-  DFfilterGene[, which(!apply(DFfilterGene == F, 2, all))]
+DFfilterGene <- data.frame(dfPancan2[480:482, ] >= FCuser)
 
-if (length(GeniSelezionati) != 0)
-{
-  #filtro il dataframe in base ai geni selezionati dall'utente
-  DFfilterGene <-
-    DFfilterGene[, GeniSelezionati[which(GeniSelezionati %in% names(DFfilterGene))]]
+if (p_valueUser != 0) {
   
+  DFfilterGene1 <-
+    data.frame(dfPancan2[c(484, 486, 488), ] >= p_valueUser)
+  
+  #SI POTREBBE SOSTITUIRE ALL'INTERNO DI ANALISI TUTTI GLI NA IN FALSE
+  DFfilterGene1[is.na(DFfilterGene1)] <- FALSE
+  
+  DFfilterGene <- as.data.frame(DFfilterGene1 & DFfilterGene)
+  
+  DFfilterGene <-
+    DFfilterGene[, which(!apply(DFfilterGene == F, 2, all))]
+  
+} else{
+  DFfilterGene <-
+    DFfilterGene[, which(!apply(DFfilterGene == F, 2, all))]
+}
+
+if(file.exists("geniSelezionti.txt")){
+  GeniSelezionati <- readLines("geniSelezionti.txt")
+}
+
+
+if (exists("GeniSelezionati"))
+{
   GeniNonSelezionati <-
     GeniSelezionati[which(!GeniSelezionati %in% names(DFfilterGene))]
+  
+  Geni <-
+    GeniSelezionati[which(GeniSelezionati %in% names(DFfilterGene))]
+  
+  #filtro il dataframe in base ai geni selezionati dall'utente
+  DFfilterGene <-
+    as.data.frame(DFfilterGene[, Geni])
+  colnames(DFfilterGene) <- Geni
+  
 }
 
 
@@ -94,7 +126,23 @@ for (i in 1:dimDF) {
     getValueDFFinale(namesGene, c(5:6))
   }
 }
-print(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE))
-#write(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE), file = "test2.json")
+#print(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE))
+write(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE), file = "test.json")
+
+send.mail(
+  from = "relief.portal@gmail.com",
+  to = "giupardeb@yahoo.it",
+  subject = "il tuo Json è pronto!",
+  body = "ricevi questa mail poiché il tuo Json è pronto, visualizzalo qui: http://localhost/result.php",
+  smtp = list(
+    host.name = "smtp.gmail.com",
+    port = 465,
+    user.name = "relief.portal",
+    passwd = "^8fdzznQv954*S_=f54x#8kv3PEH+(",
+    ssl = TRUE
+  ),
+  authenticate = TRUE,
+  send = TRUE
+)
 end.time <- Sys.time()
 print(end.time - start.time)

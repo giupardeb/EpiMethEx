@@ -1,8 +1,8 @@
 calcFCGeneLinear <- function() {
   df <- data.frame()
-  fc_UPvsMID = dfPancan2[475, ] / dfPancan2[476, ] #meansMID / meansUP
-  fc_UPvsDOWN = dfPancan2[474, ] / dfPancan2[476, ] #meansDOWN / meansUP
-  fc_MIDvsDOWN = dfPancan2[474, ] / dfPancan2[475, ] #meansDOWN / meansMID
+  fc_UPvsMID = dfPancan2[475,] / dfPancan2[476,] #meansMID / meansUP
+  fc_UPvsDOWN = dfPancan2[474,] / dfPancan2[476,] #meansDOWN / meansUP
+  fc_MIDvsDOWN = dfPancan2[474,] / dfPancan2[475,] #meansDOWN / meansMID
   
   df <- rbind(df, fc_UPvsMID)
   df <- rbind(df, fc_UPvsDOWN)
@@ -15,9 +15,9 @@ calcFCGeneLinear <- function() {
 }
 
 calcFCGeneLog <- function() {
-  fc_UPvsMID = 2 ^ (abs(dfPancan2[475, ] - dfPancan2[476, ])) #meansMID / meansUP
-  fc_UPvsDOWN = 2 ^ (abs(dfPancan2[474, ] - dfPancan2[476, ])) #meansDOWN / meansUP
-  fc_MIDvsDOWN =  2 ^ (abs(dfPancan2[474, ] - dfPancan2[475, ])) #meansDOWN / meansMID
+  fc_UPvsMID = 2 ^ (abs(dfPancan2[475,] - dfPancan2[476,])) #meansMID / meansUP
+  fc_UPvsDOWN = 2 ^ (abs(dfPancan2[474,] - dfPancan2[476,])) #meansDOWN / meansUP
+  fc_MIDvsDOWN =  2 ^ (abs(dfPancan2[474,] - dfPancan2[475,])) #meansDOWN / meansMID
   
   df <- rbind(df, fc_UPvsMID)
   df <- rbind(df, fc_UPvsDOWN)
@@ -64,20 +64,32 @@ getValueDFPancan2 <- function(nameGene, indexRowPancan2) {
 getValueDFFinale <- function(nameGene, indexRowDfFinale) {
   
   dim <- length(which(righeCheTiServono1$V22 == nameGene))
+  cgPrevious <<- ""
   
   if (dim > 1)
     #possono esistere Geni che non hanno CG
   {
     for (j in 1:dim) {
       nameCG <-
-        righeCheTiServono1[which(righeCheTiServono1$V22 == nameGene), ]$V1[j]
+        as.character(righeCheTiServono1[which(righeCheTiServono1$V22 == nameGene),]$V1[j])
       
-      outputJson[[numGene]][["CG"]][nameCG] <-
-        as.data.frame(DFfinale[indexRowDfFinale + 6 * (j - 1), nameGene])
-      
-      #PRENDO LA POSIZIONE E L'IDENTIFICATIVO DEL CG DEL GENE CONSIDERATO
-      righeCheTiServono1[which(righeCheTiServono1$V1 == nameCG &&
-                                 righeCheTiServono1$V22 == nameGene), 3:4]
+      if (nameCG != cgPrevious)
+      {
+        #PRENDO LA POSIZIONE E L'IDENTIFICATIVO DEL CG DEL GENE CONSIDERATO
+        AAA <-
+          righeCheTiServono1[which(righeCheTiServono1$V1 == nameCG &
+                                     righeCheTiServono1$V22 == nameGene), 3:4]
+        
+        outputJson[[numGene]][["CG"]][[nameCG]] <-
+          c(
+            valori = DFfinale[indexRowDfFinale + 6 * (j - 1), nameGene],
+            apply(AAA, 1, function(x)paste0(x[1],',',x[2]))
+            #identificativo = as.character(AAA$V23),
+            #posizione = as.character(AAA$V24)
+          )
+        
+        cgPrevious <- nameCG
+      }
       
     }
   }
