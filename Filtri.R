@@ -11,11 +11,12 @@ p_valueUser <- as.double(args[2])
 
 source("functions.R")
 #il which ritorna 1,2,3 ciò su dfpancan2 si traducono come: 1=480, 2=481, 3=483
+
 DFfilterGene <- data.frame(dfPancan2[480:482,] >= FCuser)
 
 if (p_valueUser != 0) {
   DFfilterGene1 <-
-    data.frame(dfPancan2[c(484, 486, 488),] >= p_valueUser)
+    data.frame(dfPancan2[c(484, 486, 488),] <= p_valueUser)
   
   #SI POTREBBE SOSTITUIRE ALL'INTERNO DI ANALISI TUTTI GLI NA IN FALSE
   DFfilterGene1[is.na(DFfilterGene1)] <- FALSE
@@ -129,7 +130,7 @@ send.mail(
     host.name = "smtp.gmail.com",
     port = 465,
     user.name = "relief.portal",
-    passwd = "^8fdzznQv954*S_=f54x#8kv3PEH+(",
+    passwd = 'jIK]PwVw0J ({`& H6 P(@?}I8CgJoU:G',
     ssl = TRUE
   ),
   authenticate = TRUE,
