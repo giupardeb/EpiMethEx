@@ -130,7 +130,7 @@ send.mail(
     host.name = "smtp.gmail.com",
     port = 465,
     user.name = "relief.portal",
-    passwd = 'jIK]PwVw0J ({`& H6 P(@?}I8CgJoU:G',
+    passwd = "",
     ssl = TRUE
   ),
   authenticate = TRUE,
