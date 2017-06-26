@@ -16,7 +16,6 @@ dfPancan <-
         header = T,
         sep = "\t")
 
-#controllare cosa succede se viene eliminata la riga che contiene almeno un valore nella colonna
 dfGpl <- na.omit(
   fread(
     "dataset/probe/GPL13534-11288.txt",
@@ -68,7 +67,25 @@ dfPancan2 <- rbind(dfPancan2, quantili)
 remove(quantili)
 
 #Fold change delle varie combinazioni (up vs mid, up vs down, etc..)
-ifelse(dataIsLinearUser, calcFCGeneLinear(), calcFCGeneLog())
+#ifelse(dataIsLinearUser, calcFCGeneLinear(), calcFCGeneLog())
+
+if(dataIsLinearUser){
+  
+  fc_UPvsMID <- calcFCLinear(dfPancan2[476,],dfPancan2[475,])
+  fc_UPvsDOWN <- calcFCLinear(dfPancan2[476,],dfPancan2[474,])
+  fc_MIDvsDOWN <- calcFCLinear(dfPancan2[475,],dfPancan2[474,])
+  
+}else {
+  
+}
+
+df <- data.frame()
+df <- rbind(df, fc_UPvsMID)
+df <- rbind(df, fc_UPvsDOWN)
+df <- rbind(df, fc_MIDvsDOWN)
+rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
+dfPancan2 <- rbind(dfPancan2, df)
+remove(df)
 
 dfTtest <- data.frame(
   matrix(NA, nrow = 6, ncol = dim(dfPancan2)[2]),
@@ -173,23 +190,33 @@ tryCatch({
       meansDOWN <<- mean(DFtmp[317:473, ])
       DFtmp <<- rbind(DFtmp, meansDOWN)
       
-      A <<- t.test(DFtmp[1:158, 1], DFtmp[159:316, 1],
-                   var.equal = F)[c('statistic', 'p.value')]
+      #calcolo FC del CG
+      meansUP <- apply(DFtmp[1:158, 1], 2, mean)
+      meansMID <- apply(DFtmp[159:316, 1], 2, mean)
+      meansDOWN <- apply(DFtmp[317:474, 1], 2, mean)
       
-      DFfinale[1:2, indexGeneColonnaDF2] <<-
-        c(A$statistic, A$p.value)
+      
+      fcCG_UPvsMID <- calcFCLinear(meansUP,meansMID)
+      fcCG_UPvsDOWN <- calcFCLinear(meansUP,meansDOWN)
+      fcCG_MIDvsDOWN <- calcFCLinear(meansMID,meansDOWN)
+        
+      A <<- t.test(DFtmp[1:158, 1], DFtmp[159:316, 1],
+                   var.equal = F)['p.value']
+      
+      DFfinale[z:(z+1), indexGeneColonnaDF2] <<-
+        c(fcCG_UPvsMID, A$p.value)
       
       A <<- t.test(DFtmp[1:158, 1], DFtmp[317:474, 1],
-                   var.equal = F)[c('statistic', 'p.value')]
+                   var.equal = F)['p.value']
       
       DFfinale[(z + 2):(z + 3), indexGeneColonnaDF2] <<-
-        c(A$statistic, A$p.value)
+        c(fcCG_UPvsDOWN, A$p.value)
       
       A <<- t.test(DFtmp[159:316, 1], DFtmp[317:474, 1],
-                   var.equal = F)[c('statistic', 'p.value')]
+                   var.equal = F)['p.value']
       
       DFfinale[(z + 4):(z + 5), indexGeneColonnaDF2] <<-
-        c(A$statistic, A$p.value)
+        c(fcCG_MIDvsDOWN, A$p.value)
       
     }
     z <<- z + 6
@@ -210,7 +237,6 @@ error=function(cond) {
 
 }
 )
-
 
 remove(k, z, dfGpl, GPL2, GPL3, GPL4, A, DFtmp)
 save.image(file = "AnalisiMultigenica1giugno.Rdata")

@@ -1,16 +1,23 @@
-calcFCGeneLinear <- function() {
-  df <- data.frame()
-  fc_UPvsMID = dfPancan2[475,] / dfPancan2[476,] #meansMID / meansUP
-  fc_UPvsDOWN = dfPancan2[474,] / dfPancan2[476,] #meansDOWN / meansUP
-  fc_MIDvsDOWN = dfPancan2[474,] / dfPancan2[475,] #meansDOWN / meansMID
+calcFCLinear <- function(a,b) {
   
-  df <- rbind(df, fc_UPvsMID)
-  df <- rbind(df, fc_UPvsDOWN)
-  df <- rbind(df, fc_MIDvsDOWN)
-  rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
-  dfPancan2 <- rbind(dfPancan2, df)
-  remove(df)
-  assign('dfPancan2', dfPancan2, envir = .GlobalEnv)
+  #df <- data.frame()
+  
+  #meanUp <- dfPancan2[476,]
+  #meanMid <- dfPancan2[475,]
+  #meanDown <- dfPancan2[474,]
+  
+  fc <- setFC(a,b)
+  #fc_UPvsDOWN =  setFC(meanUp,meanDown)
+  #fc_MIDvsDOWN = setFC(meanMid,meanDown)
+  
+  # df <- rbind(df, fc_UPvsMID)
+  # df <- rbind(df, fc_UPvsDOWN)
+  # df <- rbind(df, fc_MIDvsDOWN)
+  # rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
+  # dfPancan2 <- rbind(dfPancan2, df)
+  # remove(df)
+  # assign('dfPancan2', dfPancan2, envir = .GlobalEnv)
+  return(fc)
   
 }
 
@@ -27,6 +34,37 @@ calcFCGeneLog <- function() {
   remove(df)
   assign('dfPancan2', dfPancan2, envir = .GlobalEnv)
   
+}
+
+checkSign <- function(a,b) {
+  return (sign(a)==sign(b))
+}
+setFC <- function(a,b){
+  
+  max <- checkMax(a,b)
+  min <- checkMin(a,b)
+    
+  if(checkSign(a,b)){
+    #segni concordi
+    fc <- max / min
+  }
+  else {
+    fc <- max - min
+  }
+  
+  if(min(a,b) < max(a,b) )
+    fc <- 1*fc
+  else
+    fc <- -1*fc
+  
+  return(fc)
+}
+
+checkMax <- function(a,b) {
+  return(max(abs(a),abs(b)))
+}
+checkMin <- function(a,b) {
+  return(min(abs(a),abs(b)))
 }
 
 ttester <- function(array1, array2, start, end) {
@@ -99,4 +137,32 @@ getValueDFFinale <- function(nameGene, indexRowDfFinale) {
   }
   
   assign('outputJson', outputJson, envir = .GlobalEnv)
+}
+
+ordinamento <- function(df,nameDF) {
+  
+  A <- as.data.frame(t(df))
+  colnames(A) <- c("FC", "pValue")
+  A <- cbind(A, V22 = rownames(A))
+  
+  if (nrow(A) > limit) {
+    
+    A <- A[order(A$FC, decreasing = T), ]
+    A <- rbind(head(A, limit / 2), tail(A, limit / 2))
+    
+  }
+  
+  C <- merge(A, righeCheTiServono1, sort = F)
+  
+  colnames(C) <-
+    c("Gene", "FC", "pValue", "CG", "Identificativo", "Posizione")
+  
+  #raggruppa FC GENE PVALUE, i cg sono all'interno di posizione
+  Z<-C %>%
+    group_by(Gene=C$Gene,FC=C$FC,pValue=C$pValue) %>%
+    summarise(Posizione=paste(CG,Identificativo,Posizione,sep=";;",collapse=";;"))
+  
+  df <- Z[order(Z$FC, decreasing = T), ]
+  
+  assign(nameDF, df, envir = .GlobalEnv)
 }
