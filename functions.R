@@ -1,12 +1,32 @@
-calcFCLinear <- function(a,b) {
+calcFCGeneLinear <- function() {
+  df <- data.frame()
   
+  meanUp <- dfPancan2[476, ]
+  meanMid <- dfPancan2[475, ]
+  meanDown <- dfPancan2[474, ]
+  
+  fc_UPvsMID <- setFC(meanUp, meanMid)
+  fc_UPvsDOWN <-  setFC(meanUp, meanDown)
+  fc_MIDvsDOWN <- setFC(meanMid, meanDown)
+  
+  df <- rbind(df, fc_UPvsMID)
+  df <- rbind(df, fc_UPvsDOWN)
+  df <- rbind(df, fc_MIDvsDOWN)
+  rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
+  colnames(df) <- colnames(dfPancan2)
+  dfPancan2 <- rbind(dfPancan2, df)
+  remove(df)
+  assign('dfPancan2', dfPancan2, envir = .GlobalEnv)
+}
+
+calcFCLinear <- function(a, b) {
   #df <- data.frame()
   
   #meanUp <- dfPancan2[476,]
   #meanMid <- dfPancan2[475,]
   #meanDown <- dfPancan2[474,]
   
-  fc <- setFC(a,b)
+  fc <- setFC(a, b)
   #fc_UPvsDOWN =  setFC(meanUp,meanDown)
   #fc_MIDvsDOWN = setFC(meanMid,meanDown)
   
@@ -22,9 +42,9 @@ calcFCLinear <- function(a,b) {
 }
 
 calcFCGeneLog <- function() {
-  fc_UPvsMID = 2 ^ (abs(dfPancan2[475,] - dfPancan2[476,])) #meansMID / meansUP
-  fc_UPvsDOWN = 2 ^ (abs(dfPancan2[474,] - dfPancan2[476,])) #meansDOWN / meansUP
-  fc_MIDvsDOWN =  2 ^ (abs(dfPancan2[474,] - dfPancan2[475,])) #meansDOWN / meansMID
+  fc_UPvsMID = 2 ^ (abs(dfPancan2[475, ] - dfPancan2[476, ])) #meansMID / meansUP
+  fc_UPvsDOWN = 2 ^ (abs(dfPancan2[474, ] - dfPancan2[476, ])) #meansDOWN / meansUP
+  fc_MIDvsDOWN =  2 ^ (abs(dfPancan2[474, ] - dfPancan2[475, ])) #meansDOWN / meansMID
   
   df <- rbind(df, fc_UPvsMID)
   df <- rbind(df, fc_UPvsDOWN)
@@ -36,38 +56,48 @@ calcFCGeneLog <- function() {
   
 }
 
-checkSign <- function(a,b) {
-  return (sign(a)==sign(b))
+checkSign <- function(a, b) {
+  return (sign(a) == sign(b))
 }
-setFC <- function(a,b){
+
+setFC <- function(a, b) {
   
-  max <- checkMax(a,b)
-  min <- checkMin(a,b)
-    
-  if(checkSign(a,b)){
-    #segni concordi
-    fc <- max / min
-  }
-  else {
-    fc <- max - min
-  }
+  maxabs <- mapply(max, abs(a), abs(b))
+  minabs <- mapply(min, abs(a), abs(b))
+  max <- mapply(max, a, b)
+  min <- mapply(min, a, b)
   
-  if(min(a,b) < max(a,b) )
-    fc <- 1*fc
-  else
-    fc <- -1*fc
+  #Z <- min < max
+  #Z <- t(Z)
+  
+  Y <- checkSign(a, b)
+  
+  #fc <- ifelse(Y, maxabs / minabs, max - min)
+  
+  fc<-lapply(seq_along(Y),function(i){
+    if(Y[[i]]==T){
+      maxabs[[i]] /minabs[[i]]
+    }else{
+      max[[i]] - min[[i]]
+    }
+  })
+  
+  #fc <- ifelse(Z, 1 * fc, -1 * fc)
+  
+  fold<-lapply(seq_along(fc),function(i){
+    if(b[[i]]<a[[i]]){
+      fc[[i]]
+    }
+    else{
+      -fc[[i]]
+    }
+  })
   
   return(fc)
 }
 
-checkMax <- function(a,b) {
-  return(max(abs(a),abs(b)))
-}
-checkMin <- function(a,b) {
-  return(min(abs(a),abs(b)))
-}
-
 ttester <- function(array1, array2, start, end) {
+  
   if (sd(mapply('-', array1, array2, SIMPLIFY = T)) != 0) {
     A <- t.test(array1, array2,
                 var.equal = F)[c('statistic', 'p.value')]
@@ -100,7 +130,6 @@ getValueDFPancan2 <- function(nameGene, indexRowPancan2) {
 }
 
 getValueDFFinale <- function(nameGene, indexRowDfFinale) {
-  
   dim <- length(which(righeCheTiServono1$V22 == nameGene))
   cgPrevious <<- ""
   
@@ -109,7 +138,7 @@ getValueDFFinale <- function(nameGene, indexRowDfFinale) {
   {
     for (j in 1:dim) {
       nameCG <-
-        as.character(righeCheTiServono1[which(righeCheTiServono1$V22 == nameGene),]$V1[j])
+        as.character(righeCheTiServono1[which(righeCheTiServono1$V22 == nameGene), ]$V1[j])
       
       if (nameCG != cgPrevious)
       {
@@ -119,14 +148,13 @@ getValueDFFinale <- function(nameGene, indexRowDfFinale) {
                                      righeCheTiServono1$V22 == nameGene), 3:4]
         
         outputJson[[numGene]][["CG"]][[nameCG]] <-
-          c(
-            valori = DFfinale[indexRowDfFinale + 6 * (j - 1), nameGene],
-            apply(AAA, 1, function(x)paste0(x[1],',',x[2]))
+          c(valori = DFfinale[indexRowDfFinale + 6 * (j - 1), nameGene],
+            apply(AAA, 1, function(x)
+              paste0(x[1], ',', x[2])))
             #identificativo = as.character(AAA$V23),
-            #posizione = as.character(AAA$V24)
-          )
-        
-        cgPrevious <- nameCG
+            #posizione = as.character(AAA$V24))
+            
+            cgPrevious <- nameCG
       }
       
     }
@@ -139,17 +167,15 @@ getValueDFFinale <- function(nameGene, indexRowDfFinale) {
   assign('outputJson', outputJson, envir = .GlobalEnv)
 }
 
-ordinamento <- function(df,nameDF) {
-  
+ordinamento <- function(df, nameDF) {
   A <- as.data.frame(t(df))
   colnames(A) <- c("FC", "pValue")
   A <- cbind(A, V22 = rownames(A))
   
   if (nrow(A) > limit) {
-    
-    A <- A[order(A$FC, decreasing = T), ]
+    A <- A[order(A$FC, decreasing = T),]
     A <- rbind(head(A, limit / 2), tail(A, limit / 2))
-    
+    meanMid
   }
   
   C <- merge(A, righeCheTiServono1, sort = F)
@@ -158,11 +184,19 @@ ordinamento <- function(df,nameDF) {
     c("Gene", "FC", "pValue", "CG", "Identificativo", "Posizione")
   
   #raggruppa FC GENE PVALUE, i cg sono all'interno di posizione
-  Z<-C %>%
-    group_by(Gene=C$Gene,FC=C$FC,pValue=C$pValue) %>%
-    summarise(Posizione=paste(CG,Identificativo,Posizione,sep=";;",collapse=";;"))
+  Z <- C %>%
+    group_by(Gene = C$Gene,
+             FC = C$FC,
+             pValue = C$pValue) %>%
+    summarise(Posizione = paste(
+      CG,
+      Identificativo,
+      Posizione,
+      sep = ";;",
+      collapse = ";;"
+    ))
   
-  df <- Z[order(Z$FC, decreasing = T), ]
+  df <- Z[order(Z$FC, decreasing = T),]
   
   assign(nameDF, df, envir = .GlobalEnv)
 }
