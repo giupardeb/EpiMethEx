@@ -8,7 +8,7 @@ library(matrixStats)
 #cl <- makeCluster(2)
 dataIsLinearUser = T #da chiedere all'utente
 
-setwd("/home/giuseppe/Scrivania/TesiRepoGithub/utilitiesTesi/")
+#setwd("/home/giuseppe/Scrivania/TesiRepoGithub/utilitiesTesi/")
 source("functions.R")
 
 dfPancan <-
@@ -52,7 +52,7 @@ quantili <-
 setnames(quantili, c("perc33", "perc66", "perc99"))
 quantili <- as.data.frame(t(quantili))
 
-divArray <- dim(dfPancan2[1, ])[2] / 3
+#divArray <- dim(dfPancan2[1, ])[2] / 3 #perché è qui? xD
 
 meansUP <- apply(dfPancan2[1:158, ], 2, mean)
 meansMID <- apply(dfPancan2[159:158 * 2, ], 2, mean)
@@ -67,25 +67,8 @@ dfPancan2 <- rbind(dfPancan2, quantili)
 remove(quantili)
 
 #Fold change delle varie combinazioni (up vs mid, up vs down, etc..)
-#ifelse(dataIsLinearUser, calcFCGeneLinear(), calcFCGeneLog())
+ifelse(dataIsLinearUser,calcFCGeneLinear(), calcFCGeneLog())
 
-if(dataIsLinearUser){
-  
-  fc_UPvsMID <- calcFCLinear(dfPancan2[476,],dfPancan2[475,])
-  fc_UPvsDOWN <- calcFCLinear(dfPancan2[476,],dfPancan2[474,])
-  fc_MIDvsDOWN <- calcFCLinear(dfPancan2[475,],dfPancan2[474,])
-  
-}else {
-  
-}
-
-df <- data.frame()
-df <- rbind(df, fc_UPvsMID)
-df <- rbind(df, fc_UPvsDOWN)
-df <- rbind(df, fc_MIDvsDOWN)
-rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
-dfPancan2 <- rbind(dfPancan2, df)
-remove(df)
 
 dfTtest <- data.frame(
   matrix(NA, nrow = 6, ncol = dim(dfPancan2)[2]),
@@ -145,7 +128,7 @@ maxOccurence <-
 
 
 ##APPLY+FOREACH
-DFfinale <-
+DFfinale <<-
   data.frame(matrix(NA, nrow = maxOccurence * 6, ncol = ncol(dfPancan2)))
 DFtmp <- data.frame(matrix(NA, nrow = dim(indexTCGA)[1], ncol = 1))
 
@@ -158,18 +141,17 @@ dimIndexTC <- dim(indexTCGA)[1]
 colNamesTC <- colnames(indexTCGA)
 colNamesDFM <- colnames(dfMethylation)
 
-
+remove(dfGpl, GPL2, GPL3, GPL4,dfPancan)
 #registerDoParallel(cl)
 
 tryCatch({
   
   apply(righeCheTiServono1, 1, function(i) {
-    
-    DFtmp <<- data.frame(matrix(NA, nrow = dimIndexTC, ncol = 1))
+    DFtmp <- matrix(NA, nrow = dimIndexTC, ncol = 1)
     
     ifelse(i["V22"] != genePrevious, z <<- 1, '')
     
-    indexGeneColonnaDF2 <<- which(i["V22"] == colNamesTC)
+    indexGeneColonnaDF2 <- which(i["V22"] == colNamesTC)
     
     cgRigaDf3 <<-
       which(i["V1"] == as.character(dfMethylation$sample))
@@ -179,47 +161,47 @@ tryCatch({
       
       for (j in 1:dimIndexTC) {
         
-        TCindexDf3 <<-
+        TCindexDf3 <-
           which(as.character(indexTCGA[j, indexGeneColonnaDF2]) == colNamesDFM)
         
-        DFtmp[j, 1] <<-
-          dfMethylation[cgRigaDf3, TCindexDf3, with = F][[1]]
+        DFtmp[j, 1] <-
+          dfMethylation[cgRigaDf3, TCindexDf3][[1]]
         
       }
       
-      meansDOWN <<- mean(DFtmp[317:473, ])
-      DFtmp <<- rbind(DFtmp, meansDOWN)
+      meansDOWN <- mean(DFtmp[317:473, ])
+      DFtmp <- rbind(DFtmp, meansDOWN)
       
       #calcolo FC del CG
-      meansUP <- apply(DFtmp[1:158, 1], 2, mean)
-      meansMID <- apply(DFtmp[159:316, 1], 2, mean)
-      meansDOWN <- apply(DFtmp[317:474, 1], 2, mean)
+      meansUP <- mean(DFtmp[1:158, 1])
+      meansMID <- mean(DFtmp[159:316, 1])
+      meansDOWN <- mean(DFtmp[317:474, 1])
       
       
       fcCG_UPvsMID <- calcFCLinear(meansUP,meansMID)
       fcCG_UPvsDOWN <- calcFCLinear(meansUP,meansDOWN)
       fcCG_MIDvsDOWN <- calcFCLinear(meansMID,meansDOWN)
         
-      A <<- t.test(DFtmp[1:158, 1], DFtmp[159:316, 1],
+      A <- t.test(DFtmp[1:158, 1], DFtmp[159:316, 1],
                    var.equal = F)['p.value']
       
-      DFfinale[z:(z+1), indexGeneColonnaDF2] <<-
-        c(fcCG_UPvsMID, A$p.value)
+      DFfinale[(z):(z+1), indexGeneColonnaDF2] <-
+        c(fcCG_UPvsMID[[1]], A$p.value)
       
-      A <<- t.test(DFtmp[1:158, 1], DFtmp[317:474, 1],
+      A <- t.test(DFtmp[1:158, 1], DFtmp[317:474, 1],
                    var.equal = F)['p.value']
       
-      DFfinale[(z + 2):(z + 3), indexGeneColonnaDF2] <<-
-        c(fcCG_UPvsDOWN, A$p.value)
+      DFfinale[(z + 2):(z + 3), indexGeneColonnaDF2] <-
+        c(fcCG_UPvsDOWN[[1]], A$p.value)
       
-      A <<- t.test(DFtmp[159:316, 1], DFtmp[317:474, 1],
+      A <- t.test(DFtmp[159:316, 1], DFtmp[317:474, 1],
                    var.equal = F)['p.value']
       
-      DFfinale[(z + 4):(z + 5), indexGeneColonnaDF2] <<-
-        c(fcCG_MIDvsDOWN, A$p.value)
+      DFfinale[(z + 4):(z + 5), indexGeneColonnaDF2] <-
+        c(fcCG_MIDvsDOWN[[1]], A$p.value)
       
     }
-    z <<- z + 6
+    z <- z + 6
     
     genePrevious <<- i["V22"]
   })
@@ -238,7 +220,7 @@ error=function(cond) {
 }
 )
 
-remove(k, z, dfGpl, GPL2, GPL3, GPL4, A, DFtmp)
+remove(k, z, A, DFtmp)
 save.image(file = "AnalisiMultigenica1giugno.Rdata")
 
 end.time <- Sys.time()
