@@ -1,6 +1,7 @@
 *.Rdata
-
-
+/dataset
+/cose utili
+.*
 # Compiled source #
 ###################
 *.com
