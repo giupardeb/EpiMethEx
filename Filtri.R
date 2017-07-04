@@ -9,7 +9,7 @@ args <- commandArgs(TRUE)
 FCuser <- as.double(args[1])
 p_valueUser <- as.double(args[2])
 
-source("functions.R")
+source("functionsFiltri.R")
 #il which ritorna 1,2,3 ciò su dfpancan2 si traducono come: 1=480, 2=481, 3=483
 
 DFfilterGene <- data.frame(dfPancan2[480:482,] >= FCuser)
