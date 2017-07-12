@@ -3,9 +3,9 @@ ordinamento <- function(df, nameDF) {
   colnames(A) <- c("FC", "pValue")
   A <- cbind(A, V22 = rownames(A))
   
-  if (nrow(A) > limit) {
+  if (nrow(A) > n) {
     A <- A[order(A$FC, decreasing = T),]
-    A <- rbind(head(A, limit / 2), tail(A, limit / 2))
+    A <- rbind(head(A, n / 2), tail(A, n / 2))
   }
   
   C <- merge(A, righeCheTiServono1, sort = F)

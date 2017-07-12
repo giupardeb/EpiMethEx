@@ -1,6 +1,6 @@
 start.time <- Sys.time()
 
-load("/home/giuseppe/github/AnalisiMultigenica/AnalisiMultigenica1giugno.Rdata")
+load("AnalisiMultigenica1giugno.Rdata")
 library(jsonlite)
 library(mailR)
 
@@ -12,11 +12,11 @@ p_valueUser <- as.double(args[2])
 source("functionsFiltri.R")
 #il which ritorna 1,2,3 ciò su dfpancan2 si traducono come: 1=480, 2=481, 3=483
 
-DFfilterGene <- data.frame(dfPancan2[480:482,] >= FCuser)
+DFfilterGene <- data.frame(dfPancan2[480:482, ] >= FCuser | dfPancan2[480:482, ] >= -FCuser)
 
 if (p_valueUser != 0) {
   DFfilterGene1 <-
-    data.frame(dfPancan2[c(484, 486, 488),] <= p_valueUser)
+    data.frame(dfPancan2[c(484, 486, 488), ] <= p_valueUser)
   
   #SI POTREBBE SOSTITUIRE ALL'INTERNO DI ANALISI TUTTI GLI NA IN FALSE
   DFfilterGene1[is.na(DFfilterGene1)] <- FALSE
@@ -67,7 +67,7 @@ if (dimDF != 0) {
     if (DFfilterGene[1, i] == "TRUE" &&
         DFfilterGene[2, i] == "TRUE" &&
         DFfilterGene[3, i] == "TRUE") {
-      #ELABORO TUTTO
+      #ELABORO TUTTI I GRUPPI
       
       getValueDFPancan2(namesGene, c(477:488))
       getValueDFFinale(namesGene, c(1:6))
@@ -114,8 +114,9 @@ if (dimDF != 0) {
       getValueDFFinale(namesGene, c(5:6))
     }
   }
-}else{
-  outputJson['errore'] <- "Il Gene che hai selezionato non soddisfa i parametri da te indicati"
+} else{
+  outputJson['errore'] <-
+    "Il Gene che hai selezionato non soddisfa i parametri da te indicati"
 }
 
 #print(toJSON(outputJson, pretty = TRUE, auto_unbox = TRUE))

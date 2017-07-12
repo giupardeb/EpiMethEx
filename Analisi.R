@@ -54,14 +54,14 @@ quantili <- as.data.frame(t(quantili))
 
 #divArray <- dim(dfPancan2[1, ])[2] / 3 #perché è qui? xD
 
-meansUP <- apply(dfPancan2[1:158,], 2, mean)
-meansMID <- apply(dfPancan2[159:158 * 2,], 2, mean)
-meansDOWN <- apply(dfPancan2[317:473,], 2, mean)
+meanUP <- apply(dfPancan2[1:158,], 2, mean)
+meanMID <- apply(dfPancan2[159:158 * 2,], 2, mean)
+meanDOWN <- apply(dfPancan2[317:473,], 2, mean)
 #inserisco alla fine della colonna di ogni gene la MEDIA DEL GRUPPO DOWN perché è sempre dispari
-dfPancan2 <- rbind(dfPancan2, meansDOWN)
-dfPancan2 <- rbind(dfPancan2, meansMID)
-dfPancan2 <- rbind(dfPancan2, meansUP)
-remove(meansUP, meansMID, meansDOWN)
+dfPancan2 <- rbind(dfPancan2, meanDOWN)
+dfPancan2 <- rbind(dfPancan2, meanMID)
+dfPancan2 <- rbind(dfPancan2, meanUP)
+remove(meanUP, meanMID, meanDOWN)
 
 dfPancan2 <- rbind(dfPancan2, quantili)
 remove(quantili)
@@ -159,7 +159,7 @@ tryCatch({
     #esistono CG che si riferiscono a geni che non esistono in dfpancan
     if (length(cgRiga) != 0 && length(indexGeneColonna) != 0) {
       for (j in 1:dimIndexTC) {
-        TCindex <-
+        TCindex <<-
           which(as.character(indexTCGA[j, indexGeneColonna]) == colNamesDFM)
         
         DFtmp[j, 1] <<-
@@ -183,13 +183,13 @@ tryCatch({
       A <<- t.test(DFtmp[1:158, 1], DFtmp[159:316, 1],
                    var.equal = F)['p.value']
       
-      DFfinale[(z):(z + 1), indexGeneColonna] <-
+      DFfinale[(z):(z + 1), indexGeneColonna] <<-
         c(fcCG_UPvsMID[[1]], A$p.value)
       
       A <<- t.test(DFtmp[1:158, 1], DFtmp[317:474, 1],
                    var.equal = F)['p.value']
       
-      DFfinale[(z + 2):(z + 3), indexGeneColonna] <-
+      DFfinale[(z + 2):(z + 3), indexGeneColonna] <<-
         c(fcCG_UPvsDOWN[[1]], A$p.value)
       
       A <<- t.test(DFtmp[159:316, 1], DFtmp[317:474, 1],
@@ -202,6 +202,7 @@ tryCatch({
     z <<- z + 6
     
     genePrevious <<- i["V22"]
+    break
   })
   
 },

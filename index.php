@@ -6,7 +6,7 @@
 
 <?php
 echo("<form action='/script.php'>");
-echo("<select name='geni[]' multiple size='30'>");
+echo("<select name='geni[]' multiple size='20'>");
 
 	$handle = fopen("geni.txt", "r");
 	if ($handle) {

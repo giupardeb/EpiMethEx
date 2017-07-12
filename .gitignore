@@ -2,6 +2,7 @@
 /dataset
 /cose utili
 .*
+*.json
 # Compiled source #
 ###################
 *.com

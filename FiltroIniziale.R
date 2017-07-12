@@ -1,10 +1,11 @@
-FCuser <- 2
-p_valueUser <- 0.05
-limit <- 100
 source("functionsFiltriIniziali.R")
 library(jsonlite)
 library(dplyr)
 load("/home/giuseppe/github/AnalisiMultigenica/AnalisiMultigenica1giugno.Rdata")
+
+FCuser <- 2
+p_valueUser <- 0.05
+n <- 50
 
 UPvsMIDordinato <- dfPancan2[c("fc_UPvsMID", "pvalue_UPvsMID"),]
 UPvsDOWNordinato <- dfPancan2[c("fc_UPvsDOWN", "pvalue_UPvsDOWN"),]
@@ -14,17 +15,17 @@ MIDvsDOWNordinato <-
 UPvsMIDordinato <-
   UPvsMIDordinato[c(as.numeric(which(
     UPvsMIDordinato[1, ] >= FCuser |
-      UPvsMIDordinato[1, ] <= (-1 * FCuser)
+      UPvsMIDordinato[1, ] <= (-FCuser)
   )))]
 UPvsDOWNordinato <-
   UPvsDOWNordinato[c(as.numeric(which(
     UPvsDOWNordinato[1, ] >= FCuser |
-      UPvsDOWNordinato[1, ] <= (-1 * FCuser)
+      UPvsDOWNordinato[1, ] <= (-FCuser)
   )))]
 MIDvsDOWNordinato <-
   MIDvsDOWNordinato[c(as.numeric(which(
     MIDvsDOWNordinato[1, ] >= FCuser |
-      MIDvsDOWNordinato[1, ] <= (-1 * FCuser)
+      MIDvsDOWNordinato[1, ] <= (-FCuser)
   )))]
 
 
