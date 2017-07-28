@@ -22,7 +22,7 @@ valori.m$X__2 <- factor(valori.m$X__2, unique(as.character(valori.m$X__2)))
 
 ggplot(data = valori.m, aes(x = X__2, y = value)) + geom_boxplot(aes(fill = X__2),outlier.shape = NA)+theme(axis.text.x = element_text(angle = 90, hjust = 1))+scale_fill_manual(name = "MMP9", values = c("#619cff", "#00ba38","#f8766d"))
 
-#boxplot con up mid down uniti
+#boxplot cg con up mid down uniti
 valori <- A[14:486, 2:23]
 valori <- subset(valori, select = -MMP9)
 valori.m <- melt(valori, id.vars = "X__2")

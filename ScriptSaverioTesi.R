@@ -1,7 +1,6 @@
-start.time <- Sys.time()
 library(data.table)
 library(matrixStats)
-
+library(dplyr)
 #cl <- makeCluster(2)
 dataIsLinearUser = F #da chiedere all'utente
 
@@ -11,7 +10,7 @@ source("functions.R")
 dfPancan <-
   fread("dataset/pancan_normalized/genomicMatrix",
         header = T,
-        sep = "\t")
+        sep = "\t")[c(10692, 8410, 17451), ]
 
 dfGpl <- na.omit(
   fread(
@@ -20,15 +19,14 @@ dfGpl <- na.omit(
     header = F ,
     skip = 37,
     na.strings = c("", "NA")
-  )[-1, c(1,15,16, 22, 23, 24,25)]
+  )[-1, c(1, 15, 16, 22, 23, 24, 25)]
 )
-
 dfMethylation <<-
   fread("dataset/Methylation450k/genomicMatrix", sep = "\t")
-dfMethylation <- na.omit(dfMethylation)
+dfMethylation<-na.omit(dfMethylation)
 
 # transpose all but the first column (name)
-dfPancan2 <- as.data.frame(t(dfPancan[,-1]))
+dfPancan2 <- as.data.frame(t(dfPancan[, -1]))
 colnames(dfPancan2) <- dfPancan$sample
 
 #rimuovo tutti quei geni che hanno valori uguali a zero
@@ -51,9 +49,9 @@ quantili <- as.data.frame(t(quantili))
 
 #divArray <- dim(dfPancan2[1, ])[2] / 3 #perché è qui? xD
 
-meanUP <- apply(dfPancan2[1:158,], 2, mean)
-meanMID <- apply(dfPancan2[159:158 * 2,], 2, mean)
-meanDOWN <- apply(dfPancan2[317:473,], 2, mean)
+meanUP <- apply(dfPancan2[1:158, ], 2, mean)
+meanMID <- apply(dfPancan2[159:316, ], 2, mean)
+meanDOWN <- apply(dfPancan2[317:473, ], 2, mean)
 #inserisco alla fine della colonna di ogni gene la MEDIA DEL GRUPPO DOWN perché è sempre dispari
 dfPancan2 <- rbind(dfPancan2, meanDOWN)
 dfPancan2 <- rbind(dfPancan2, meanMID)
@@ -62,10 +60,8 @@ remove(meanUP, meanMID, meanDOWN)
 
 dfPancan2 <- rbind(dfPancan2, quantili)
 remove(quantili)
-
 #Fold change delle varie combinazioni (up vs mid, up vs down, etc..)
 ifelse(dataIsLinearUser, calcFCGeneLinear(), calcFCGeneLog())
-
 
 dfTtest <- data.frame(
   matrix(NA, nrow = 6, ncol = dim(dfPancan2)[2]),
@@ -79,9 +75,7 @@ dfTtest <- data.frame(
   )
 )
 colnames(dfTtest) <- colnames(dfPancan2)
-dimDFpancan <- dim(dfPancan)[2]
-
-#registerDoParallel(cl)
+dimDFpancan <- dim(dfPancan2)[2]
 
 for (k in 1:dimDFpancan) {
   #UPvsMID
@@ -92,15 +86,21 @@ for (k in 1:dimDFpancan) {
   
   #MIDvsDOWN
   ttester(dfPancan2[159:316, k], dfPancan2[317:474, k], 5, 6)
+  k <- k + 1
 }
 
 dfPancan2 <- rbind(dfPancan2, dfTtest)
 remove(dfTtest)
-#stopCluster(cl)
 
 s <- strsplit(dfGpl$V22, split = ";")
 GPL2 <-
-  data.frame(V1 = rep(dfGpl$V1, sapply(s, length)), V22 = unlist(s))
+  data.frame(
+    V1 = rep(dfGpl$V1, sapply(s, length)),
+    V22 = unlist(s),
+    V15 = rep(dfGpl$V15,sapply(s, length)),
+    V16 = rep(dfGpl$V16,sapply(s, length)),
+    V25 = rep(dfGpl$V25,sapply(s, length))
+  )
 
 s <- strsplit(dfGpl$V23, split = ";")
 GPL3 <- data.frame(V2 = NA, V23 = unlist(s))
@@ -115,7 +115,10 @@ righeCheTiServono1 <-
     ! (all(x == "")), righeCheTiServono1)
 
 righeCheTiServono1 <-
-  righeCheTiServono1[order(as.character(righeCheTiServono1$V22)), ]
+  righeCheTiServono1[order(as.character(righeCheTiServono1$V22)),]
+
+#rimuovo i geni e i cg che non sono all'interno di dfpancan2
+righeCheTiServono1<- subset(righeCheTiServono1, as.character(righeCheTiServono1[ , 2]) %in% names(dfPancan2))  
 
 maxOccurence <-
   max(as.data.frame(table(unlist(
@@ -123,6 +126,8 @@ maxOccurence <-
   )))$Freq)
 remove(s)
 
+#sarebbe bene chel'ordinamento dei CG per ogni gene avvenisse prima di fare l'analisi
+righeCheTiServono1 <- righeCheTiServono1 %>% arrange(V16, V22)
 
 ##APPLY+FOREACH
 DFfinale <<-
@@ -205,7 +210,7 @@ tryCatch({
     z <<- z + 6
     
     genePrevious <<- i["V22"]
-    break
+    
   })
   
 },
@@ -221,10 +226,32 @@ error = function(cond) {
   
 })
 
-remove(k, z, DFtmp)
-save.image(file = "AnalisiMultigenica1giugno.Rdata")
+#adesso creo un dataframe dei CG per ogni gene con l'ordine indicato da indexTCGA
 
-end.time <- Sys.time()
-time.taken <- end.time - start.time
-#print(end.time - start.time)
-write(time.taken, file = "tempi")
+#dfCGunique conterrà i CG univoci, in modo tale che DFCGorder contenga solo i CG univoci
+dfCGunique<-righeCheTiServono1[!duplicated(righeCheTiServono1[,1]),]
+
+dfMethylation$sample<-as.factor(dfMethylation$sample)
+dfMethylation<-as.data.frame(dfMethylation)
+rownames(dfMethylation)<-dfMethylation$sample
+setkey(as.data.table(dfMethylation), sample)
+
+tmp <- tapply(lapply(1:nrow(dfCGunique),
+                     function (i)
+                       (dfMethylation[as.vector(dfCGunique[i, 1]), as.vector(indexTCGA[, as.vector(dfCGunique[i, 2])])])),
+              factor(dfCGunique[, 2]), function (x) {
+                unname(unlist(x))
+              })
+max.rows <- max(sapply(tmp, length))
+DFCGorder <-
+  do.call(cbind, lapply(tmp, function(x) {
+    length(x) <- max.rows
+    return (x)
+  }))
+
+#ciclo in cui per ogni gene(colonna di DFCGorder) costruisco una matrice ad hoc per creare i boxplot
+
+m <- data.frame( matrix(DFCGorder[,1], nrow=473, ncol=length(DFCGorder[,1])/473))
+colnames(m)<- as.character(dfCGunique[which(dfCGunique$V22 %in% "MMP9"),1])
+keep.cols <- names(m) %in% NA
+m <- m [! keep.cols]
