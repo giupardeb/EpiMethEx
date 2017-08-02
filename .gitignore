@@ -3,6 +3,7 @@
 /cose utili
 .*
 *.json
+*.txt
 # Compiled source #
 ###################
 *.com
