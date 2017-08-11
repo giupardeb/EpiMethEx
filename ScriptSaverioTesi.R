@@ -10,7 +10,7 @@ source("functions.R")
 dfPancan <-
   fread("dataset/pancan_normalized/genomicMatrix",
         header = T,
-        sep = "\t")[c(10692, 8410, 17451), ]
+        sep = "\t")[c(10692, 8410, 17451),]
 
 dfGpl <- na.omit(
   fread(
@@ -19,14 +19,21 @@ dfGpl <- na.omit(
     header = F ,
     skip = 37,
     na.strings = c("", "NA")
-  )[-1, c(1, 15, 16, 22, 23, 24, 25)]
+  )[-1, c(1, 15, 16, 22, 23, 24, 25, 26)]
 )
+
+# create a new column `x` with the three columns collapsed together
+dfGpl$island <- apply( dfGpl[ , c('V26','V25') ] , 1 , paste , collapse = "_" )
+
+# remove the unnecessary columns
+dfGpl <- dfGpl[ , !( names( dfGpl ) %in% c('V25','V26') ) ]
+
 dfMethylation <<-
   fread("dataset/Methylation450k/genomicMatrix", sep = "\t")
-dfMethylation<-na.omit(dfMethylation)
+dfMethylation <- na.omit(dfMethylation)
 
 # transpose all but the first column (name)
-dfPancan2 <- as.data.frame(t(dfPancan[, -1]))
+dfPancan2 <- as.data.frame(t(dfPancan[,-1]))
 colnames(dfPancan2) <- dfPancan$sample
 
 #rimuovo tutti quei geni che hanno valori uguali a zero
@@ -49,9 +56,9 @@ quantili <- as.data.frame(t(quantili))
 
 #divArray <- dim(dfPancan2[1, ])[2] / 3 #perché è qui? xD
 
-meanUP <- apply(dfPancan2[1:158, ], 2, mean)
-meanMID <- apply(dfPancan2[159:316, ], 2, mean)
-meanDOWN <- apply(dfPancan2[317:473, ], 2, mean)
+meanUP <- apply(dfPancan2[1:158,], 2, mean)
+meanMID <- apply(dfPancan2[159:316,], 2, mean)
+meanDOWN <- apply(dfPancan2[317:473,], 2, mean)
 #inserisco alla fine della colonna di ogni gene la MEDIA DEL GRUPPO DOWN perché è sempre dispari
 dfPancan2 <- rbind(dfPancan2, meanDOWN)
 dfPancan2 <- rbind(dfPancan2, meanMID)
@@ -97,9 +104,9 @@ GPL2 <-
   data.frame(
     V1 = rep(dfGpl$V1, sapply(s, length)),
     V22 = unlist(s),
-    V15 = rep(dfGpl$V15,sapply(s, length)),
-    V16 = rep(dfGpl$V16,sapply(s, length)),
-    V25 = rep(dfGpl$V25,sapply(s, length))
+    V15 = rep(dfGpl$V15, sapply(s, length)),
+    V16 = rep(dfGpl$V16, sapply(s, length)),
+    V25 = rep(dfGpl$V25, sapply(s, length))
   )
 
 s <- strsplit(dfGpl$V23, split = ";")
@@ -115,10 +122,12 @@ righeCheTiServono1 <-
     ! (all(x == "")), righeCheTiServono1)
 
 righeCheTiServono1 <-
-  righeCheTiServono1[order(as.character(righeCheTiServono1$V22)),]
+  righeCheTiServono1[order(as.character(righeCheTiServono1$V22)), ]
 
 #rimuovo i geni e i cg che non sono all'interno di dfpancan2
-righeCheTiServono1<- subset(righeCheTiServono1, as.character(righeCheTiServono1[ , 2]) %in% names(dfPancan2))  
+righeCheTiServono1 <-
+  subset(righeCheTiServono1,
+         as.character(righeCheTiServono1[, 2]) %in% names(dfPancan2))
 
 maxOccurence <-
   max(as.data.frame(table(unlist(
@@ -147,7 +156,6 @@ remove(dfGpl, GPL2, GPL3, GPL4, dfPancan)
 #registerDoParallel(cl)
 
 tryCatch({
-  
   apply(righeCheTiServono1, 1, function(i) {
     DFtmp <<- matrix(NA, nrow = dimIndexTC, ncol = 1)
     
@@ -169,19 +177,19 @@ tryCatch({
         
       }
       
-      meanDOWN <<- mean(DFtmp[317:473,])
+      meanDOWN <<- mean(DFtmp[317:473, ])
       DFtmp <<- rbind(DFtmp, meanDOWN)
       
       #calcolo la media dei vari gruppi del CG
-      meanUP <<- mean(DFtmp[1:158,])
-      meanMID <<- mean(DFtmp[159:316,])
-      meanDOWN <<- mean(DFtmp[317:474,])
+      meanUP <<- mean(DFtmp[1:158, ])
+      meanMID <<- mean(DFtmp[159:316, ])
+      meanDOWN <<- mean(DFtmp[317:474, ])
       
-      if(dataIsLinearUser){
+      if (dataIsLinearUser) {
         fcCG_UPvsMID <<- calcFCLinear(meanUP, meanMID)
         fcCG_UPvsDOWN <<- calcFCLinear(meanUP, meanDOWN)
         fcCG_MIDvsDOWN <<- calcFCLinear(meanMID, meanDOWN)
-      }else{
+      } else{
         fcCG_UPvsMID <<- setFClog(meanUP, meanMID)
         fcCG_UPvsDOWN <<- setFClog(meanUP, meanDOWN)
         fcCG_MIDvsDOWN <<- setFClog(meanMID, meanDOWN)
@@ -229,11 +237,11 @@ error = function(cond) {
 #adesso creo un dataframe dei CG per ogni gene con l'ordine indicato da indexTCGA
 
 #dfCGunique conterrà i CG univoci, in modo tale che DFCGorder contenga solo i CG univoci
-dfCGunique<-righeCheTiServono1[!duplicated(righeCheTiServono1[,1]),]
+dfCGunique <- righeCheTiServono1[!duplicated(righeCheTiServono1[, 1]), ]
 
-dfMethylation$sample<-as.factor(dfMethylation$sample)
-dfMethylation<-as.data.frame(dfMethylation)
-rownames(dfMethylation)<-dfMethylation$sample
+dfMethylation$sample <- as.factor(dfMethylation$sample)
+dfMethylation <- as.data.frame(dfMethylation)
+rownames(dfMethylation) <- dfMethylation$sample
 setkey(as.data.table(dfMethylation), sample)
 
 tmp <- tapply(lapply(1:nrow(dfCGunique),
@@ -251,7 +259,56 @@ DFCGorder <-
 
 #ciclo in cui per ogni gene(colonna di DFCGorder) costruisco una matrice ad hoc per creare i boxplot
 
-m <- data.frame( matrix(DFCGorder[,1], nrow=473, ncol=length(DFCGorder[,1])/473))
-colnames(m)<- as.character(dfCGunique[which(dfCGunique$V22 %in% "MMP9"),1])
+m <-
+  data.frame(matrix(DFCGorder[, 1], nrow = 473, ncol = length(DFCGorder[, 1]) /
+                      473))
+colnames(m) <-
+  as.character(dfCGunique[which(dfCGunique$V22 %in% "MMP9"), 1])
+
+#cg con up mid down uniti
 keep.cols <- names(m) %in% NA
-m <- m [! keep.cols]
+m <- m [!keep.cols]
+z <- head(rep(c("UP", "Medium", "Down"), each = 158), -1)
+m$stratification <- z
+
+#CG per posizione
+numrow = 473 * 20 #numeroCG * numerototalirighe
+
+df <- matrix(NA, nrow = numrow, ncol = 3)
+colnames(df) <- c('cg', 'posizione', 'value')
+posizioni <-
+  as.character(righeCheTiServono1[which(righeCheTiServono1$V22 %in% "MMP9"), 7])
+cg <- colnames(m)
+m1 <- subset(m, select = -c(stratification))
+m1 <- t(m1)
+
+i <- 1
+for (j in 1:20) {
+  #identifica cg e posizioni
+  for (k in 1:473) {
+    df[i, 1] <- cg[j]
+    df[i, 2] <- posizioni[j]
+    df[i, 3] <- m1[j, k]
+    i <- i + 1
+  }
+}
+df <- as.data.frame(df)
+df$value <- as.numeric(as.character(df$value))
+df <- cbind(df, stratification = m$stratification)
+df$f1f2 <- interaction(df$cg, df$stratification)
+
+#boxplot CpG_Island_pos
+
+s <-
+  strsplit(as.character(righeCheTiServono1[which(righeCheTiServono1$V22 %in% "MMP9"), 5]), split = ":") #da inserire
+namesColumns <-
+  as.character(righeCheTiServono1[which(righeCheTiServono1$V22 %in% "MMP9"), 1])
+GPL2 <-
+  data.frame(V1 = rep(namesColumns, sapply(s, length)), V25 = unlist(s))#da inserire
+
+nrows <- 473 * nrow(GPL2) #473=valori cg, 40 numero di righe di GPL2
+
+df1 <- matrix(NA, nrow = nrows, ncol = 3)#da inserire
+colnames(df1) <- c('cg', 'identificativo', 'value')#da inserire
+posizioni <- as.character(GPL2$V25)#da inserire
+cg <- namesColumns#da inserire
