@@ -1,9 +1,9 @@
 calcFCGeneLinear <- function() {
   df <- data.frame()
   
-  meanUp <- dfPancan2[476, ]
-  meanMid <- dfPancan2[475, ]
-  meanDown <- dfPancan2[474, ]
+  meanUp <- dfPancan2[476, -ncol(dfPancan2)]
+  meanMid <- dfPancan2[475, -ncol(dfPancan2)]
+  meanDown <- dfPancan2[474, -ncol(dfPancan2)]
   
   fc_UPvsMID <- setFC(meanUp, meanMid)
   fc_UPvsDOWN <-  setFC(meanUp, meanDown)
@@ -20,23 +20,8 @@ calcFCGeneLinear <- function() {
 }
 
 calcFCLinear <- function(a, b) {
-  #df <- data.frame()
-  
-  #meanUp <- dfPancan2[476,]
-  #meanMid <- dfPancan2[475,]
-  #meanDown <- dfPancan2[474,]
-  
+
   fc <- setFC(a, b)
-  #fc_UPvsDOWN =  setFC(meanUp,meanDown)
-  #fc_MIDvsDOWN = setFC(meanMid,meanDown)
-  
-  # df <- rbind(df, fc_UPvsMID)
-  # df <- rbind(df, fc_UPvsDOWN)
-  # df <- rbind(df, fc_MIDvsDOWN)
-  # rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
-  # dfPancan2 <- rbind(dfPancan2, df)
-  # remove(df)
-  # assign('dfPancan2', dfPancan2, envir = .GlobalEnv)
   return(fc)
   
 }
@@ -45,11 +30,11 @@ calcFCGeneLog <- function() {
   
   df <- data.frame()
   
-  meanUp <- dfPancan2[476, ]
-  meanMid <- dfPancan2[475, ]
-  meanDown <- dfPancan2[474, ]
+  meanUp <- dfPancan2[476, -ncol(dfPancan2)]
+  meanMid <- dfPancan2[475, -ncol(dfPancan2)]
+  meanDown <- dfPancan2[474, -ncol(dfPancan2)]
   
-  fc_UPvsMID <- setFClog(meanUp,meanMid ) 
+  fc_UPvsMID <- setFClog(meanUp,meanMid) 
   fc_UPvsDOWN <- setFClog(meanUp,meanDown)
   fc_MIDvsDOWN <-  setFClog(meanMid,meanDown)
   
@@ -57,8 +42,8 @@ calcFCGeneLog <- function() {
   df <- rbind(df, fc_UPvsDOWN)
   df <- rbind(df, fc_MIDvsDOWN)
   rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
-  names(df)<-names(dfPancan2)
-  dfPancan2 <- rbind(dfPancan2, df)
+  names(df)<-names(dfPancan2[,-ncol(dfPancan2)])
+  dfPancan2 <- rbind.fill(dfPancan2, df)
   remove(df)
   assign('dfPancan2', dfPancan2, envir = .GlobalEnv)
   

@@ -66,14 +66,16 @@ valori<-valori[-2,]
 AA<-t(valori)
 AA<-as.data.frame(AA)
 
-s <- strsplit(as.character(AA$V1), split = ":")
+s <- strsplit(as.character(AA$V1), split = ":") #da inserire
 GPL2 <-
-  data.frame(V1 = rep(colnames(valori), sapply(s, length)), V22 = unlist(s))
+  data.frame(V1 = rep(colnames(valori), sapply(s, length)), V22 = unlist(s))#da inserire
 
-df<-matrix(NA,nrow = 18920,ncol = 3)
-colnames(df)<-c('cg','identificativo','value')
-posizioni<-as.character(GPL2$V22)
-cg<-colnames(valori)
+nrows <- 473 * 40 #473=valori cg, 40 numero di righe di GPL2
+
+df<-matrix(NA,nrow = nrows,ncol = 3)#da inserire
+colnames(df)<-c('cg','identificativo','value')#da inserire
+posizioni<-as.character(GPL2$V22)#da inserire
+cg<-colnames(valori)#da inserire
 valori<-t(valori)
 valori <- valori[,-1]
 
@@ -92,6 +94,7 @@ df<-as.data.frame(df)
 #df$value<-as.numeric(df$value)
 df<-cbind(df,A[14:486,2])
 df$f1f2 <- interaction(df$cg, df$X__2)
+
 df$value<-as.numeric(as.character(df$value))
 df$identificativo <- factor(df$identificativo, unique(as.character(df$identificativo)))
 df$X__2 <- factor(df$X__2, unique(as.character(df$X__2)))
