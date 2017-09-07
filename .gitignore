@@ -4,6 +4,8 @@
 .*
 *.json
 *.txt
+*.xlsx
+*.csv
 # Compiled source #
 ###################
 *.com
