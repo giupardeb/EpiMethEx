@@ -1,43 +1,57 @@
-calcFC_CGLinear <- function(matrix2) {
+calcFC <- function(matrix2,dataIsLinear) {
   df <- data.frame()
   
   meanUp <- matrix2[476, -ncol(matrix2)]
   meanMid <- matrix2[475, -ncol(matrix2)]
   meanDown <- matrix2[474, -ncol(matrix2)]
   
-  fc_UPvsMID <- set_FC(meanUp, meanMid)
-  fc_UPvsDOWN <-  set_FC(meanUp, meanDown)
-  fc_MIDvsDOWN <- set_FC(meanMid, meanDown)
+  if(dataIsLinear){
+    fc_UPvsMID <- setFC(meanUp, meanMid)
+    fc_UPvsDOWN <-  setFC(meanUp, meanDown)
+    fc_MIDvsDOWN <- setFC(meanMid, meanDown)
+  }else{
+    fc_UPvsMID <- setFClog(meanUp,meanMid) 
+    fc_UPvsDOWN <- setFClog(meanUp,meanDown)
+    fc_MIDvsDOWN <-  setFClog(meanMid,meanDown)
+  }
   
   df <- rbind(df, fc_UPvsMID)
   df <- rbind(df, fc_UPvsDOWN)
   df <- rbind(df, fc_MIDvsDOWN)
-  rownames(df) <- c("fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN")
   
   if(dim(matrix2)[2] == 2){
     colnames(df)<-"value"
   }else{
     colnames(df) <- colnames(matrix2[,-ncol(matrix2)])
   }
-  #colnames(df) <- colnames(matrix2[,-ncol(matrix2)])
+  
   matrix2 <- rbind.fill(matrix2,df)
   remove(df)
-  #assign('matrix1', matrix2, envir = .GlobalEnv)
   return(matrix2)
 }
 
-calcFC_Linear <- function(a, b) {
-  
-  fc <- setFC(a, b)
-  return(fc)
-  
-}
 
 checkSign <- function(a, b) {
   return (sign(a) == sign(b))
 }
 
-set_FC <- function(meanFirstGroup, meanSecondGroup) {
+setFClog <- function(meanFirstGroup, meanSecondGroup){
+  
+  fold <- 2 ^ (abs(meanFirstGroup - meanSecondGroup))
+  
+  fc <- lapply(seq_along(fold), function(i) {
+    if (meanSecondGroup[[i]] < meanFirstGroup[[i]]) {
+      fold[[i]]
+    }
+    else{
+      -fold[[i]]
+    }
+  })
+  
+  return(fc)
+  
+}
+setFC <- function(meanFirstGroup, meanSecondGroup) {
   
   maxabs <- mapply(max, abs(meanFirstGroup), abs(meanSecondGroup))
   minabs <- mapply(min, abs(meanFirstGroup), abs(meanSecondGroup))
@@ -65,6 +79,21 @@ set_FC <- function(meanFirstGroup, meanSecondGroup) {
   return(fold)
 }
 
+#Utilizzato nell'analisi dei Geni
+ttester <- function(array1, array2, start, end) {
+  
+  if (sd(mapply('-', array1, array2, SIMPLIFY = T)) != 0) {
+    A <- t.test(array1, array2,
+                var.equal = F)[c('statistic', 'p.value')]
+    dfTtest[start:end, k] <- c(A$statistic, A$p.value)
+    
+    assign('dfTtest', dfTtest, envir = .GlobalEnv)
+  }
+  
+}
+
+#Utilizzato nell'analisi dei CG
+
 t_tester <- function(array1, array2) {
   
   if (sd(mapply('-', array1, array2, SIMPLIFY = T),na.rm = T) != 0) {
@@ -76,6 +105,7 @@ t_tester <- function(array1, array2) {
     
   }
 }
+
 
 Analisi <- function(matrix1){
   
@@ -107,8 +137,8 @@ Analisi <- function(matrix1){
   #remove(df)
   remove(meanUP, meanMID, meanDOWN)
   
-  matrix1<- calcFC_CGLinear(matrix1)
-
+  matrix1<- calcFC(matrix1,T)
+  
   for (k in 1:dimM) {
     #UPvsMID
     dfTtest[1, k]<-t_tester(matrix1[which(matrix1$stratification %in% "UP"), k], matrix1[which(matrix1$stratification %in% "Medium"), k])
@@ -124,12 +154,4 @@ Analisi <- function(matrix1){
   remove(dfTtest)
   return(matrix1)
   
-}
-
-cbind.fill <- function(...){
-  nm <- list(...) 
-  nm <- lapply(nm, as.matrix)
-  n <- max(sapply(nm, nrow)) 
-  do.call(cbind, lapply(nm, function (x) 
-    rbind(x, matrix(, n-nrow(x), ncol(x))))) 
 }
