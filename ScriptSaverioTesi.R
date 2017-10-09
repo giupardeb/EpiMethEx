@@ -5,15 +5,16 @@ library(dplyr)
 library(xlsx)
 library(miscTools)
 library(RcmdrMisc)
+library(diptest)#usato solo per test
 
-dataIsLinearUser = F #da chiedere all'utente
+dataIsLinearUser = T #da chiedere all'utente
 
 source("Functions.R")
 
 dfPancan <-
   fread("dataset/pancan_normalized/genomicMatrix",
         header = T,
-        sep = "\t")[c(8411,8412),]
+        sep = "\t")[c(11090,8410,13632), ]
 
 dfGpl <-
   fread(
@@ -30,13 +31,13 @@ dfGpl$island <-
   apply(dfGpl[, c('V26', 'V25')] , 1 , paste , collapse = "_")
 
 # remove the unnecessary columns
-dfGpl <- dfGpl[, -c('V26', 'V25')]
+dfGpl <- dfGpl[,-c('V26', 'V25')]
 
 dfMethylation <<-
   fread("dataset/Methylation450k/genomicMatrix", sep = "\t")
 
 # transpose all but the first column (name)
-dfPancan2 <- as.data.frame(t(dfPancan[, -1]))
+dfPancan2 <- as.data.frame(t(dfPancan[,-1]))
 colnames(dfPancan2) <- dfPancan$sample
 
 #rimuovo tutti quei geni che hanno valori uguali a zero
@@ -48,7 +49,8 @@ indexTCGA <- data.frame(sapply(seq_along(dfPancan2), function(x) {
 }))
 
 colnames(indexTCGA) <- colnames(dfPancan2)
-
+#indexTCGA<-read.table("indexTCGA.csv")
+#file.remove("indexTCGA.csv")
 
 dfPancan2 <- apply(dfPancan2, 2, sort, decreasing = T)
 
@@ -58,56 +60,79 @@ setnames(quantili, c("perc33", "perc66", "perc99"))
 quantili <- as.data.frame(t(quantili))
 
 dfPancan2 <- as.data.frame(dfPancan2)
-
+#ottengo l'indice della colonna che contiene tutti i valori diversi tra loro, 
+#evito l'errore nel momento in cui utilizzo bin.var
+index<-which.max(apply(dfPancan2, 2, function(x)length(unique(x))))[[1]]
 dfPancan2$variable <-
   with(dfPancan2,
        bin.var(
-         dfPancan2[c(1:nrow(dfPancan2)),1],
+         dfPancan2[, index],
          bins = 3,
          method = 'proportions',
          labels = c('D', 'M', 'UP')
        ))
 meanUP <-
-  apply(dfPancan2[which(dfPancan2$variable %in% "UP"),-ncol(dfPancan2)], 2, mean)
+  apply(dfPancan2[which(dfPancan2$variable %in% "UP"), -ncol(dfPancan2)], 2, mean)
 meanMID <-
-  apply(dfPancan2[which(dfPancan2$variable %in% "M"),-ncol(dfPancan2)], 2, mean)
+  apply(dfPancan2[which(dfPancan2$variable %in% "M"), -ncol(dfPancan2)], 2, mean)
 meanDOWN <-
-  apply(dfPancan2[which(dfPancan2$variable %in% "D"),-ncol(dfPancan2)], 2, mean)
+  apply(dfPancan2[which(dfPancan2$variable %in% "D"), -ncol(dfPancan2)], 2, mean)
 
 #inserisco alla fine della colonna di ogni gene la MEDIA DEL GRUPPO DOWN perché è sempre dispari
 dfPancan2 <- rbind(dfPancan2, meanDOWN)
 dfPancan2 <- rbind(dfPancan2, meanMID)
 dfPancan2 <- rbind(dfPancan2, meanUP)
-remove(meanUP, meanMID, meanDOWN)
+#remove(meanUP, meanMID, meanDOWN)
+rm(meanUP, meanMID, meanDOWN)
 
 dfPancan2 <- rbind.fill(dfPancan2, quantili)
 
-remove(quantili)
+#remove(quantili)
+rm(quantili)
+gc()
+
 #Fold change delle varie combinazioni (up vs mid, up vs down, etc..)
 
-dfPancan2<-calcFC(dfPancan2,dataIsLinearUser)
-
+dfPancan2 <- calcFC(dfPancan2, dataIsLinearUser)
 
 dfTtest <- data.frame(matrix(NA,
                              nrow = 6,
-                             ncol = dim(dfPancan2[,-ncol(dfPancan2)])[2]))
-
-colnames(dfTtest) <- colnames(dfPancan2[, -ncol(dfPancan2)])
-dimDFpancan <- dim(dfPancan2[, -ncol(dfPancan2)])[2]
+                             ncol = dim(dfPancan2[, -ncol(dfPancan2)])[2]))
+colnames(dfTtest) <- colnames(dfPancan2[,-ncol(dfPancan2)])
+dimDFpancan <- dim(dfPancan2[,-ncol(dfPancan2)])[2]
 
 for (k in 1:dimDFpancan) {
   #UPvsMID
-  ttester(dfPancan2[which(dfPancan2$variable %in% "UP"), k], dfPancan2[which(dfPancan2$variable %in% "M"), k], 1, 2)
+  dfTtest[1:2, k] <-
+    ttester(dfPancan2[which(dfPancan2$variable %in% "UP"), k], dfPancan2[which(dfPancan2$variable %in% "M"), k])
   
   #UPvsDOWN
-  ttester(dfPancan2[which(dfPancan2$variable %in% "UP"), k], dfPancan2[which(dfPancan2$variable %in% "D"), k], 3, 4)
+  dfTtest[3:4, k] <-
+    ttester(dfPancan2[which(dfPancan2$variable %in% "UP"), k], dfPancan2[which(dfPancan2$variable %in% "D"), k])
   
   #MIDvsDOWN
-  ttester(dfPancan2[which(dfPancan2$variable %in% "M"), k], dfPancan2[which(dfPancan2$variable %in% "D"), k], 5, 6)
+  dfTtest[5:6, k] <-
+    ttester(dfPancan2[which(dfPancan2$variable %in% "M"), k], dfPancan2[which(dfPancan2$variable %in% "D"), k])
+  gc()
+  
 }
+
+prova <- data.frame(matrix(NA,
+                           nrow = 6,
+                           ncol = dim(dfPancan2[, -ncol(dfPancan2)])[2]))
+
+ncoll<-dim(dfPancan2[, -ncol(dfPancan2)])[2]
+prova[1:ncoll]<-lapply(dfPancan2[1:ncoll],function(){
+  ttester(dfPancan2[which(dfPancan2$variable %in% "UP"), k], dfPancan2[which(dfPancan2$variable %in% "M"), k])
+  ttester(dfPancan2[which(dfPancan2$variable %in% "UP"), k], dfPancan2[which(dfPancan2$variable %in% "D"), k])
+  ttester(dfPancan2[which(dfPancan2$variable %in% "M"), k], dfPancan2[which(dfPancan2$variable %in% "D"), k])
+  
+})
+
 
 dfPancan2 <- rbind.fill(dfPancan2, dfTtest)
 remove(dfTtest)
+#dfPancan2 <- read.csv("dfPancan2.csv",check.names = F)
 row.names(dfPancan2)[476] <- "meanUP"
 row.names(dfPancan2)[475] <- "meanMedium"
 row.names(dfPancan2)[474] <- "meanDown"
@@ -129,7 +154,7 @@ s <- strsplit(dfGpl$V22, split = ";")
 s1 <- strsplit(dfGpl$V23, split = ";")
 s2 <- strsplit(dfGpl$V24, split = ";")
 
-righeCheTiServono1 <-
+dfAnnotations <-
   data.frame(
     cg = rep(dfGpl$V1, sapply(s, length)),
     #V1
@@ -143,36 +168,37 @@ righeCheTiServono1 <-
     island = rep(dfGpl$island, sapply(s, length))
     
   )
-
+#remove(s, s1, s2)
+rm(s, s1, s2, dfGpl)
+gc()
 #rimuovo i geni e i cg che non sono all'interno di dfpancan2
-righeCheTiServono1 <-
-  subset(righeCheTiServono1,
-         as.character(righeCheTiServono1$gene) %in% names(dfPancan2))
+dfAnnotations <-
+  subset(dfAnnotations,
+         as.character(dfAnnotations$gene) %in% names(dfPancan2))
 
 dfMethylation <-
   subset(dfMethylation,
-         as.character(dfMethylation$sample) %in% righeCheTiServono1$cg)
+         as.character(dfMethylation$sample) %in% dfAnnotations$cg)
 
 maxOccurence <-
-  max(as.data.frame(table(unlist(
-    righeCheTiServono1$gene
-  )))$Freq)
-remove(s, s1, s2)
+  max(as.data.frame(table(unlist(dfAnnotations$gene)))$Freq)
+
 
 #Riordino per ogni gene i cg relativi
-righeCheTiServono1 <- righeCheTiServono1 %>% arrange(gene, V16)
+dfAnnotations <- dfAnnotations %>% arrange(gene, V16)
 
 #adesso creo un dataframe dei CG per ogni gene con l'ordine indicato da indexTCGA
 
 #dfCGunique conterrà la coppia (CG-posizione) univoca xk ci sono cg ripetuti in cui cambia la colonna V23
+
 dfCGunique <-
-  righeCheTiServono1[!duplicated(righeCheTiServono1[, c(1, 6)]),]
+  dfAnnotations[!duplicated(dfAnnotations[, c(1, 6)]), ]
 
 dfMethylation$sample <- as.factor(dfMethylation$sample)
 dfMethylation <- as.data.frame(dfMethylation)
 rownames(dfMethylation) <- dfMethylation$sample
 setkey(as.data.table(dfMethylation), sample)
-
+gc()
 tmp <- tapply(lapply(1:nrow(dfCGunique),
                      function (i)
                        (dfMethylation[as.vector(dfCGunique[i, 1]), as.vector(indexTCGA[, as.vector(dfCGunique[i, "gene"])])])),
@@ -190,17 +216,17 @@ DFCGorder <-
 ### CREAZIONE, PER OGNI GENE, TABELLE CONTENENTI CG APPARTENENTI AI VARI GRUPPI CON CALCOLO FC PVALUE>>>>>>>
 
 valExprGene <-
-  dfPancan2[c(480:482, 484, 486, 488), -ncol(dfPancan2)]
+  dfPancan2[c(480:482, 484, 486, 488),-ncol(dfPancan2)]
 posizioni <- as.vector(unique(dfCGunique$posizione))
 geni <- colnames(DFCGorder)
 isole <- as.vector(unique(dfCGunique$island))
 isole <-
   Filter(function(x)
     ! any(grepl("NA_NA", x)), isole) #remove "NA_NA"
-mFinaleCGglobali <- data.frame(matrix(NA, ncol = 1))
-mFinaleCGposition <- data.frame(matrix(NA, ncol = 1))
-mFinaleCGisland <- data.frame(matrix(NA, ncol = 1))
-mFinaleCGunificati <- data.frame(matrix(NA, ncol = 1))
+mFinaleCGglobali <- data.frame(matrix())
+mFinaleCGposition <- data.frame(matrix())
+mFinaleCGisland <- data.frame(matrix())
+mFinaleCGunificati <- data.frame(matrix())
 
 stratification <- as.data.frame(rep("UP", each = 158))
 b <- as.data.frame(rep("Medium", each = 157))
@@ -216,13 +242,20 @@ nome_colonne_island <- ""
 nome_colonne_cgUniti <- ""
 nome_colonne_cgGlobali <- ""
 
-for (i in 1:length(geni)) {
+rm(b, c, dfPancan, dfMethylation, indexTCGA)
+gc()
+lengthGeni <- length(geni)
+lengthPosizioni <- length(posizioni)
+lengthIsole <- length(isole)
+
+for (i in 1:lengthGeni) {
   m <-
     data.frame(matrix(
       DFCGorder[, i],
       nrow = 473,
       ncol = length(DFCGorder[, i]) / 473
     ))
+
   colnames(m) <-
     as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
   
@@ -236,116 +269,68 @@ for (i in 1:length(geni)) {
   #conservo gli indici delle colonne NA per poi reinserirli alla fine
   columnNA <- which(sapply(m1, function(x)
     all(is.na(x))))
-
+  
   #rimuovo colonne NA
   m1 <- m1[, colSums(is.na(m1)) != nrow(m1)]
-  m1 <- cbind(m1, stratification)
-  m1 <- Analisi(m1)
-  m1$stratification <- NULL
+  
+  if (length(m1) != 0) {
+    m1 <- cbind(m1, stratification)
+    m1 <- Analisi(m1)
+    m1$stratification <- NULL
+  }
+  
   if (length(columnNA) != 0) {
     for (j in 1:length(columnNA)) {
       m1 <- insertCol(as.matrix(m1), columnNA[[j]], v = NA)
     }
   }
-
+  
   colnames(m1) <-
     paste(as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1]),
           as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 6]),
           geni[i],
           sep = "_")
-  m1 <-
-    as.data.frame(m1[-c(1:473), ])
+ 
+  #prima di eliminare le righe dei valori calcolare la correlazione 
+  #tra valore gene e singolo CG
   
+  m1<- rbind(m1,cor(dfPancan2[c(1:473),geni[i]],m1[c(1:473),]))
+  m1<- rbind(m1,cor(dfPancan2[c(1:473),geni[i]],m1[c(1:473),],method = "spearman"))
+  #tale controllo viene fatto per evitare che una colonna di NA di m1 venga eliminata
+  #del tutto. Così facendo non ho problemi con eventuali cbind.
+  if (dim(m1)[1] > 473) {
+    m1 <-
+      as.data.frame(m1[-c(1:473),])
+  } else{
+    m1 <-
+      as.data.frame(m1[-c(1:464),])
+  }
+  
+  #inserisco i valori del gene di riferimento
   m1 <-
     data.frame(sapply(m1, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
   
   mFinaleCGglobali <- cbind(mFinaleCGglobali, m1)
-  
+  rm(m1)
   
   ###CG secondo la posizione nel gene (TS, Body ecc)
-  for (k in 1:length(posizioni)) {
-    cg <-
-      as.vector(dfCGunique[which(dfCGunique$gene %in% geni[i] &
-                                   dfCGunique$posizione %in% posizioni[k]), 1])
-    if (length(cg) != 0) {
-      cg <- paste(cg, geni[i], sep = "_")
-      m2 <- as.data.frame(m[, cg])
-      
-      #eliminare colonne tutte NA
-      m2 <- as.data.frame(m2[, colSums(is.na(m2)) != nrow(m2)])
-      if (dim(m2)[2] != 0) {
-        if (dim(m2)[2] != 1) {
-          m2 <- stack(m2)
-          m2 <- as.matrix(m2[,-2])
-        }
-        num_row <- nrow(m2)
-        m2 <- cbind(m2, stratification)
-        colnames(m2) <- c("value", "stratification")
-        
-        #considerare se è necessario fare l'arrange..
-        if (dim(m2)[2] != 2) {
-          m2 <- arrange(m2, desc(stratification))
-        }
-        
-        m2 <- Analisi(m2)
-        m2 <- as.data.frame(m2[,-2])
-        
-        nome_colonne_position <-
-          paste(nome_colonne_position,
-                paste(posizioni[k], geni[i], sep = "_"),
-                sep = ",")
-        
-        #eliminare le righe dei valori dei cg
-        m2 <- as.data.frame(m2[-c(1:num_row),])
-        m2 <-
-          data.frame(sapply(m2, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
-        mFinaleCGposition <- cbind(mFinaleCGposition, m2)
-      }
-    }
-  }
+  mFinaleCGposition <-
+    cbind(
+      mFinaleCGposition,
+      Analisi2(
+        lengthPosizioni,
+        i,
+        posizioni,
+        "posizione",
+        nome_colonne_position,
+        T
+      )
+    )
   
   ###CG secondo le isole CpG
-  
-  for (j in 1:length(isole)) {
-    cg <-
-      as.vector(dfCGunique[which(dfCGunique$gene %in% geni[i] &
-                                   dfCGunique$island %in% isole[j]), 1])
-    if (length(cg) != 0) {
-      cg <- paste(cg, geni[i], sep = "_")
-      m3 <- as.data.frame(m[, cg])
-      
-      #eliminare colonne tutte NA
-      m3 <- as.data.frame(m3[, colSums(is.na(m3)) != nrow(m3)])
-      if (dim(m3)[2] != 0) {
-        if (dim(m3)[2] != 1) {
-          m3 <- stack(m3)
-          m3 <- as.matrix(m3[,-2])
-        }
-        num_row <- nrow(m3)
-        m3 <- cbind(m3, stratification)
-        colnames(m3) <- c("value", "stratification")
-        
-        if (dim(m3)[2] != 2) {
-          m3 <- arrange(m2, desc(stratification))
-        }
-        
-        m3 <- Analisi(m3)
-        m3 <- as.data.frame(m3[,-2])
-        
-        nome_colonne_island <-
-          paste(nome_colonne_island,
-                paste(isole[j], geni[i], sep = "_"),
-                sep = ",")
-        
-        #eliminare le righe dei valori dei cg
-        m3 <- as.data.frame(m3[-c(1:num_row),])
-        m3 <-
-          data.frame(sapply(m3, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
-        
-        mFinaleCGisland <- cbind(mFinaleCGisland, m3)
-      }
-    }
-  }
+  mFinaleCGisland <-
+    cbind(mFinaleCGisland,
+          Analisi2(lengthIsole, i, isole, "island", nome_colonne_island, F))
   
   ###CG unificati
   m4 <- m
@@ -353,124 +338,80 @@ for (i in 1:length(geni)) {
   if (dim(m4)[2] != 0) {
     if (dim(m4)[2] != 1) {
       m4 <- stack(m4)
-      m4 <- as.matrix(m4[,-2])
+      m4 <- as.matrix(m4[, -2])
     }
     num_row_m4 <- nrow(m4)
     m4 <- cbind(m4, stratification)
     colnames(m4) <- c("value", "stratification")
     m4 <- Analisi(m4)
-    m4 <- as.data.frame(m4[,-2])
+    m4 <- as.data.frame(m4[, -2])
     
     nome_colonne_cgUniti <-
       paste(nome_colonne_cgUniti, paste("CG", geni[i], sep = "_"), sep = ",")
     #eliminare le righe dei valori dei cg
-    m4 <- as.data.frame(m4[-c(1:num_row_m4),])
+    m4 <- as.data.frame(m4[-c(1:num_row_m4), ])
     m4 <-
       data.frame(sapply(m4, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
+    
+    m4<- rbind(m4,cor(dfPancan2[c(1:473),geni[i]],m4[c(1:473),]))
+    m4<- rbind(m4,cor(dfPancan2[c(1:473),geni[i]],m4[c(1:473),],method = "spearman"))
     mFinaleCGunificati <- cbind(mFinaleCGunificati, m4)
   }
-  
+  rm(m4)
+  gc()
 }
 
-mFinaleCGglobali <-
-  mFinaleCGglobali[, -1]
 
-row.names(mFinaleCGglobali)[1] <- "meanDown"
-row.names(mFinaleCGglobali)[2] <- "meanMedium"
-row.names(mFinaleCGglobali)[3] <- "meanUP"
-row.names(mFinaleCGglobali)[4] <- "fc_UPvsMID"
-row.names(mFinaleCGglobali)[5] <- "fc_UPvsDOWN"
-row.names(mFinaleCGglobali)[6] <- "fc_MIDvsDOWN"
-row.names(mFinaleCGglobali)[7] <- "pvalue_UPvsMID"
-row.names(mFinaleCGglobali)[8] <- "pvalue_UPvsDOWN"
-row.names(mFinaleCGglobali)[9] <- "pvalue_MIDvsDOWN"
-row.names(mFinaleCGglobali)[10] <- "fc_UPvsMID(gene)"
-row.names(mFinaleCGglobali)[11] <- "fc_UPvsDOWN(gene)"
-row.names(mFinaleCGglobali)[12] <- "fc_MIDvsDOWN(gene)"
-row.names(mFinaleCGglobali)[13] <- "pvalue_UPvsMID(gene)"
-row.names(mFinaleCGglobali)[14] <- "pvalue_UPvsDOWN(gene)"
-row.names(mFinaleCGglobali)[15] <- "pvalue_MIDvsDOWN(gene)"
+
+mFinaleCGglobali <-
+  mFinaleCGglobali[,-1]
+
+mFinaleCGglobali<-setRowNames(mFinaleCGglobali)
 
 a <- strsplit(colnames(mFinaleCGglobali), split = "_")
 a <- unlist(lapply(a, '[[', 1))
 mFinaleCGglobali <-
   rbind(mFinaleCGglobali, as.character(dfCGunique[which(dfCGunique$cg %in% as.array(a)), 7]))
-row.names(mFinaleCGglobali)[16] <- "island"
+row.names(mFinaleCGglobali)[nrow(mFinaleCGglobali)] <- "island"
 
 mFinaleCGglobali <- t(mFinaleCGglobali)
 
 write.xlsx(mFinaleCGglobali, "CG_Globali.xlsx", sheetName = "Sheet1")
 
 mFinaleCGposition <-
-  mFinaleCGposition[, -1]
+  mFinaleCGposition[,-1]
 
 nome_colonne_position <- strsplit(nome_colonne_position, ",")[[1]]
 colnames(mFinaleCGposition) <- nome_colonne_position[-1]
-row.names(mFinaleCGposition)[1] <- "meanDown"
-row.names(mFinaleCGposition)[2] <- "meanMedium"
-row.names(mFinaleCGposition)[3] <- "meanUP"
-row.names(mFinaleCGposition)[4] <- "fc_UPvsMID"
-row.names(mFinaleCGposition)[5] <- "fc_UPvsDOWN"
-row.names(mFinaleCGposition)[6] <- "fc_MIDvsDOWN"
-row.names(mFinaleCGposition)[7] <- "pvalue_UPvsMID"
-row.names(mFinaleCGposition)[8] <- "pvalue_UPvsDOWN"
-row.names(mFinaleCGposition)[9] <- "pvalue_MIDvsDOWN"
-row.names(mFinaleCGposition)[10] <- "fc_UPvsMID(gene)"
-row.names(mFinaleCGposition)[11] <- "fc_UPvsDOWN(gene)"
-row.names(mFinaleCGposition)[12] <- "fc_MIDvsDOWN(gene)"
-row.names(mFinaleCGposition)[13] <- "pvalue_UPvsMID(gene)"
-row.names(mFinaleCGposition)[14] <- "pvalue_UPvsDOWN(gene)"
-row.names(mFinaleCGposition)[15] <- "pvalue_MIDvsDOWN(gene)"
+
+mFinaleCGposition<-setRowNames(mFinaleCGposition)
+
 mFinaleCGposition <- t(mFinaleCGposition)
 
 write.xlsx(mFinaleCGposition, "CG_poszione_gene.xlsx", sheetName = "Sheet1")
 
 
 mFinaleCGunificati <-
-  mFinaleCGunificati[, -1]
+  mFinaleCGunificati[,-1]
 
 nome_colonne_cgUniti <- strsplit(nome_colonne_cgUniti, ",")[[1]]
 colnames(mFinaleCGunificati) <- nome_colonne_cgUniti[-1]
-row.names(mFinaleCGunificati)[1] <- "meanDown"
-row.names(mFinaleCGunificati)[2] <- "meanMedium"
-row.names(mFinaleCGunificati)[3] <- "meanUP"
-row.names(mFinaleCGunificati)[4] <- "fc_UPvsMID"
-row.names(mFinaleCGunificati)[5] <- "fc_UPvsDOWN"
-row.names(mFinaleCGunificati)[6] <- "fc_MIDvsDOWN"
-row.names(mFinaleCGunificati)[7] <- "pvalue_UPvsMID"
-row.names(mFinaleCGunificati)[8] <- "pvalue_UPvsDOWN"
-row.names(mFinaleCGunificati)[9] <- "pvalue_MIDvsDOWN"
-row.names(mFinaleCGunificati)[10] <- "fc_UPvsMID(gene)"
-row.names(mFinaleCGunificati)[11] <- "fc_UPvsDOWN(gene)"
-row.names(mFinaleCGunificati)[12] <- "fc_MIDvsDOWN(gene)"
-row.names(mFinaleCGunificati)[13] <- "pvalue_UPvsMID(gene)"
-row.names(mFinaleCGunificati)[14] <- "pvalue_UPvsDOWN(gene)"
-row.names(mFinaleCGunificati)[15] <- "pvalue_MIDvsDOWN(gene)"
+
+mFinaleCGunificati<-setRowNames(mFinaleCGunificati)
+
 mFinaleCGunificati <- t(mFinaleCGunificati)
 
 write.xlsx(mFinaleCGunificati, "CG_unificati.xlsx", sheetName = "Sheet1")
 
 
 mFinaleCGisland <-
-  mFinaleCGisland[, -1]
+  mFinaleCGisland[,-1]
 
 nome_colonne_island <- strsplit(nome_colonne_island, ",")[[1]]
 colnames(mFinaleCGisland) <- nome_colonne_island[-1]
-row.names(mFinaleCGisland)[1] <- "meanDown"
-row.names(mFinaleCGisland)[2] <- "meanMedium"
-row.names(mFinaleCGisland)[3] <- "meanUP"
-row.names(mFinaleCGisland)[4] <- "fc_UPvsMID"
-row.names(mFinaleCGisland)[5] <- "fc_UPvsDOWN"
-row.names(mFinaleCGisland)[6] <- "fc_MIDvsDOWN"
-row.names(mFinaleCGisland)[7] <- "pvalue_UPvsMID"
-row.names(mFinaleCGisland)[8] <- "pvalue_UPvsDOWN"
-row.names(mFinaleCGisland)[9] <- "pvalue_MIDvsDOWN"
-row.names(mFinaleCGisland)[10] <- "fc_UPvsMID(gene)"
-row.names(mFinaleCGisland)[11] <- "fc_UPvsDOWN(gene)"
-row.names(mFinaleCGisland)[12] <- "fc_MIDvsDOWN(gene)"
-row.names(mFinaleCGisland)[13] <- "pvalue_UPvsMID(gene)"
-row.names(mFinaleCGisland)[14] <- "pvalue_UPvsDOWN(gene)"
-row.names(mFinaleCGisland)[15] <- "pvalue_MIDvsDOWN(gene)"
+
+mFinaleCGisland<-setRowNames(mFinaleCGisland)
+
 mFinaleCGisland <- t(mFinaleCGisland)
 
 write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
@@ -481,47 +422,36 @@ write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
 
 
 #CG per CpG_Island
-numrow = 473 * 20 #numeroCG * numerototalirighe
-
-df <- matrix(NA, nrow = numrow, ncol = 3)
-colnames(df) <- c('cg', 'island', 'value')
-islands <-
-  as.character(righeCheTiServono1[which(righeCheTiServono1$gene %in% "MMP9"), 7])
-cg <- colnames(m)
-m1 <- subset(m, select = -c(stratification))
-m1 <- t(m1)
-
-i <- 1
-for (j in 1:20) {
-  #identifica cg e islands
-  for (k in 1:473) {
-    df[i, 1] <- cg[j]
-    df[i, 2] <- islands[j]
-    df[i, 3] <- m1[j, k]
-    i <- i + 1
-  }
-}
-df <- as.data.frame(df)
-df$value <- as.numeric(as.character(df$value))
-df <- cbind(df, stratification = m$stratification)
-df$f1f2 <- interaction(df$cg, df$stratification)
-
-write.csv(df, "prova.csv")
-
-#cg per posizione
-
-
-#codice per saverio
-Z <-
-  righeCheTiServono1[!duplicated(righeCheTiServono1[, 1]), c(1, 4)]
-
-Z <- Z[which(Z$gene %in% "TP53"), ]
-AAA <- dfMethylation[which(dfMethylation$sample %in% Z$cg), ]
-write.xlsx(AAA, "CG_TP53.xlsx", sheetName = "Sheet1")
-
-
-
-a <-
-  melt(setDT(as.data.frame(mFinaleCGglobali)),
-       id = 'id',
-       measure.vars = list(c(2, 4, 6), c(3, 5, 7)))[, variable := c('fc_UPvsMID', 'fc_UPvsDOWN', 'fc_MIDvsDOWN')[variable]][order(id)]
+# numrow = 473 * 20 #numeroCG * numerototalirighe
+# 
+# df <- matrix(NA, nrow = numrow, ncol = 3)
+# colnames(df) <- c('cg', 'island', 'value')
+# islands <-
+#   as.character(dfAnnotations[which(dfAnnotations$gene %in% "MMP9"), 7])
+# cg <- colnames(m)
+# m1 <- subset(m, select = -c(stratification))
+# m1 <- t(m1)
+# 
+# i <- 1
+# for (j in 1:20) {
+#   #identifica cg e islands
+#   for (k in 1:473) {
+#     df[i, 1] <- cg[j]
+#     df[i, 2] <- islands[j]
+#     df[i, 3] <- m1[j, k]
+#     i <- i + 1
+#   }
+# }
+# df <- as.data.frame(df)
+# df$value <- as.numeric(as.character(df$value))
+# df <- cbind(df, stratification = m$stratification)
+# df$f1f2 <- interaction(df$cg, df$stratification)
+# 
+# write.csv(df, "prova.csv")
+# 
+# #cg per posizione
+# 
+# a <-
+#   melt(setDT(as.data.frame(mFinaleCGglobali)),
+#        id = 'id',
+#        measure.vars = list(c(2, 4, 6), c(3, 5, 7)))[, variable := c('fc_UPvsMID', 'fc_UPvsDOWN', 'fc_MIDvsDOWN')[variable]][order(id)]
