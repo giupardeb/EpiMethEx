@@ -9,6 +9,13 @@ calcBetaDifference <- function(matrix3){
   bd_MIDvsDOWN <- medianMID - medianDOWN
   
   df <- rbind(df, bd_UPvsMID,bd_UPvsDOWN,bd_MIDvsDOWN)
+  
+  if(dim(matrix3)[2] == 2){
+    colnames(df)<-"value"
+  }else{
+    colnames(df) <- colnames(matrix3[,-ncol(matrix3)])
+  }
+  
   matrix3 <- rbind.fill(matrix3,df)
   remove(df)
   return(matrix3)
@@ -205,16 +212,17 @@ Analisi2<-function(leng,index,position,column,nome_col,flag){
                 paste(position[k], geni[index], sep = "_"),
                 sep = ",")
         
-        #eliminare le righe dei valori dei cg
-        m2 <- as.data.frame(m2[-c(1:num_row),])
-        m2 <- data.frame(sapply(m2, c, unlist(valExprGene[, geni[index]])), row.names = NULL)
         m2<- rbind(m2,cor(dfPancan2[c(1:473),geni[index]],m2[c(1:473),]))
         m2<- rbind(m2,cor(dfPancan2[c(1:473),geni[index]],m2[c(1:473),],method = "spearman"))
         
+        m2 <- data.frame(sapply(m2, c, unlist(valExprGene[, geni[index]])), row.names = NULL)
+        
+        m2 <- as.data.frame(m2[-c(1:num_row),])
         mFinale <- cbind(mFinale, m2)
       }
     }
   }
+
   if(flag)
     assign('nome_colonne_position', nome_col, envir = .GlobalEnv)
   else

@@ -348,13 +348,16 @@ for (i in 1:lengthGeni) {
     
     nome_colonne_cgUniti <-
       paste(nome_colonne_cgUniti, paste("CG", geni[i], sep = "_"), sep = ",")
+    
+    #come faccio a fare la correlazione dei CG uniti? ho dimensioni differenti
+    m4<- rbind(m4,cor(dfPancan2[c(1:473),geni[i]],m4[c(1:473),]))
+    m4<- rbind(m4,cor(dfPancan2[c(1:473),geni[i]],m4[c(1:473),],method = "spearman"))
     #eliminare le righe dei valori dei cg
     m4 <- as.data.frame(m4[-c(1:num_row_m4), ])
     m4 <-
       data.frame(sapply(m4, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
     
-    m4<- rbind(m4,cor(dfPancan2[c(1:473),geni[i]],m4[c(1:473),]))
-    m4<- rbind(m4,cor(dfPancan2[c(1:473),geni[i]],m4[c(1:473),],method = "spearman"))
+
     mFinaleCGunificati <- cbind(mFinaleCGunificati, m4)
   }
   rm(m4)
