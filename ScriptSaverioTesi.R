@@ -293,9 +293,13 @@ for (i in 1:lengthGeni) {
  
   #prima di eliminare le righe dei valori calcolare la correlazione 
   #tra valore gene e singolo CG
+  c<-as.matrix(dfPancan2[c(1:473),geni[i]])
+  a<-corr.test(c,m1[c(1:473),],adjust = "none")
+  m1<-rbind(m1,a$r,a$p) #add correlation and p-value
   
-  m1<- rbind(m1,cor(dfPancan2[c(1:473),geni[i]],m1[c(1:473),]))
-  m1<- rbind(m1,cor(dfPancan2[c(1:473),geni[i]],m1[c(1:473),],method = "spearman"))
+  #m1<- rbind(m1,cor(dfPancan2[c(1:473),geni[i]],m1[c(1:473),]))
+  #m1<- rbind(m1,cor(dfPancan2[c(1:473),geni[i]],m1[c(1:473),],method = "spearman"))
+  
   #tale controllo viene fatto per evitare che una colonna di NA di m1 venga eliminata
   #del tutto. Così facendo non ho problemi con eventuali cbind.
   if (dim(m1)[1] > 473) {
