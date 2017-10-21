@@ -11,6 +11,9 @@ calcBetaDifference <- function(matrix3) {
     bd_UPvsMID <- data.frame(medianUP - medianMID)
     bd_UPvsDOWN <- data.frame(medianUP - medianDOWN)
     bd_MIDvsDOWN <- data.frame(medianMID - medianDOWN)
+    colnames(bd_UPvsMID)<- colnames(matrix3[,-ncol(matrix3)])
+    colnames(bd_UPvsDOWN)<- colnames(matrix3[,-ncol(matrix3)])
+    colnames(bd_MIDvsDOWN)<- colnames(matrix3[,-ncol(matrix3)])
   }
   
   matrix3 <- rbind.fill(matrix3, bd_UPvsMID, bd_UPvsDOWN, bd_MIDvsDOWN)

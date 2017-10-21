@@ -1,3 +1,4 @@
+start.time <- Sys.time()
 library(data.table)
 library(matrixStats)
 library(plyr)
@@ -11,13 +12,14 @@ library(doParallel)
 library(foreach)
 
 dataIsLinearUser = F
-no_cores <- detectCores() / 2
+no_cores <- detectCores()/2
+
 source("Functions.R")
 
 dfPancan <-
   fread("dataset/pancan_normalized/genomicMatrix",
         header = T,
-        sep = "\t")[c(13632, 11090, 8410), ]
+        sep = "\t")[1001:2001, ]
 
 dfGpl <-
   fread(
@@ -140,17 +142,19 @@ resultMIDvsDOWN <-
     #MIDvsDOWN
     ttester(dfPancan2[which(dfPancan2$variable %in% "M"), k], dfPancan2[which(dfPancan2$variable %in% "D"), k])
   }
+stopCluster(cl)
 
 resultUPvsMID <- as.data.frame(t(resultUPvsMID))
 resultUPvsDOWN <- as.data.frame(t(resultUPvsDOWN))
 resultMIDvsDOWN <- as.data.frame(t(resultMIDvsDOWN))
 colnames(resultUPvsMID) <- colnames(dfPancan2[, -ncol(dfPancan2)])
 colnames(resultUPvsDOWN) <- colnames(dfPancan2[, -ncol(dfPancan2)])
-colnames(resultMIDvsDOWN) <- colnames(dfPancan2[, -ncol(dfPancan2)])
+colnames(resultMIDvsDOWN) <-colnames(dfPancan2[, -ncol(dfPancan2)])
 
 dfPancan2 <-
   rbind.fill(dfPancan2, resultUPvsMID, resultUPvsDOWN, resultMIDvsDOWN)
-#remove(dfTtest)
+remove(resultUPvsMID, resultUPvsDOWN, resultMIDvsDOWN)
+gc()
 
 row.names(dfPancan2)[476] <- "meanUP"
 row.names(dfPancan2)[475] <- "meanMedium"
@@ -243,10 +247,6 @@ isole <- as.vector(unique(dfCGunique$island))
 isole <-
   Filter(function(x)
     ! any(grepl("NA_NA", x)), isole) #remove "NA_NA"
-# mFinaleCGglobali <- data.frame(matrix())
-# mFinaleCGposition <- data.frame(matrix())
-# mFinaleCGisland <- data.frame(matrix())
-# mFinaleCGunificati <- data.frame(matrix())
 
 stratification <- as.data.frame(rep("UP", each = 158))
 b <- as.data.frame(rep("Medium", each = 157))
@@ -257,19 +257,19 @@ names(c) <- "stratification"
 stratification <- rbind(stratification, b)
 stratification <- rbind(stratification, c)
 
-# nome_colonne_position <- ""
-# nome_colonne_island <- ""
-# nome_colonne_cgUniti <- ""
-# nome_colonne_cgGlobali <- ""
-
 rm(b, c, dfPancan, dfMethylation, indexTCGA)
 gc()
 lengthGeni <- length(geni)
 lengthPosizioni <- length(posizioni)
 lengthIsole <- length(isole)
 
+
+# Create cluster with desired number of cores
 cl <- makeCluster(no_cores)
+
+# Register cluster
 registerDoParallel(cl)
+
 clusterCall(cl, function()
   library(plyr))
 clusterCall(cl, function()
@@ -277,75 +277,88 @@ clusterCall(cl, function()
 clusterCall(cl, function()
   library(psych))
 
-
 ###GC globali
-mFinaleCGglobali <- foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
-  m <-
-    data.frame(matrix(
-      DFCGorder[, i],
-      nrow = 473,
-      ncol = length(DFCGorder[, i]) / 473
-    ))
-  
-  colnames(m) <-
-    as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
-  
-  
-  keep.cols <- names(m) %in% NA
-  m <- m [!keep.cols]
-  colnames(m) <- paste(names(m), geni[i], sep = "_")
-  
-  m1 <- m
-  #conservo gli indici delle colonne NA per poi reinserirli alla fine
-  columnNA <- which(sapply(m1, function(x)
-    all(is.na(x))))
-  
-  #rimuovo colonne NA
-  m1 <- m1[, colSums(is.na(m1)) != nrow(m1)]
-  
-  if (length(m1) != 0) {
-    m1 <- cbind(m1, stratification)
-    m1 <- Analisi(m1)
-    m1$stratification <- NULL
-  }
-  
-  if (length(columnNA) != 0) {
-    for (j in 1:length(columnNA)) {
-      m1 <- insertCol(as.matrix(m1), columnNA[[j]], v = NA)
+mFinaleCGglobali <-
+  foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
+#for (i in 1:lengthGeni){
+  flag<-F
+    m <-
+      data.frame(matrix(
+        DFCGorder[, i],
+        nrow = 473,
+        ncol = length(DFCGorder[, i]) / 473
+      ))
+    
+    colnames(m) <-
+      as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
+    
+    
+    keep.cols <- names(m) %in% NA
+    m <- m [!keep.cols]
+    colnames(m) <- paste(names(m), geni[i], sep = "_")
+    
+    m1 <- m
+    #conservo gli indici delle colonne NA per poi reinserirli alla fine
+    columnNA <- which(sapply(m1, function(x)
+      all(is.na(x))))
+    
+    #rimuovo colonne NA
+    m1 <- m1[, colSums(is.na(m1)) != nrow(m1)]
+    
+    if (length(m1) != 0) {
+      m1 <- cbind(m1, stratification)
+      m1 <- Analisi(m1)
+      m1$stratification <- NULL
+    }else{
+      flag<-T
     }
-  }
-  
-  colnames(m1) <-
-    paste(as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1]),
-          as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 6]),
-          geni[i],
-          sep = "_")
-  
-  #prima di eliminare le righe dei valori calcolare la correlazione
-  #tra valore gene e singolo CG
-  c <- as.data.frame(dfPancan2[c(1:473), geni[i]])
-  mTmp <- as.data.frame(m1[c(1:473), ])
-  a <- corr.test(c, mTmp, adjust = "none")
-  m1 <-
-    rbind(m1, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
-  
-  #tale controllo viene fatto per evitare che una colonna di NA di m1 venga eliminata
-  #del tutto. Così facendo non ho problemi con eventuali cbind.
-  if (dim(m1)[1] > 473) {
+    
+    if (length(columnNA) != 0) {
+      for (j in 1:length(columnNA)) {
+        m1 <- insertCol(as.matrix(m1), columnNA[[j]], v = NA)
+      }
+    }
+    
+    if(flag){
+      df <- as.data.frame(matrix(NA,nrow = 9,ncol = dim(m1)[2]))
+      m1<- rbind(m1,df)
+    }
+    
+    #prima di eliminare le righe dei valori calcolare la correlazione
+    #tra valore gene e singolo CG
+    
+    c <- as.data.frame(dfPancan2[c(1:473), geni[i]])
+    mTmp <- as.data.frame(m1[c(1:473), ])
+    a <- corr.test(c, mTmp, adjust = "none")
     m1 <-
-      as.data.frame(m1[-c(1:473), ])
-  } else{
+      rbind(m1, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
+    
+    #tale controllo viene fatto per evitare che una colonna di NA di m1 venga eliminata
+    #del tutto. Così facendo non ho problemi con eventuali cbind.
+    if (dim(m1)[1] > 473) {
+      m1 <-
+        as.data.frame(m1[-c(1:473), ])
+    } else{
+      m1 <-
+        as.data.frame(m1[-c(1:464), ])
+    }
+    
+    #inserisco i valori del gene di riferimento
+    
     m1 <-
-      as.data.frame(m1[-c(1:464), ])
+      data.frame(sapply(m1, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
+    
+    
+    colnames(m1) <-
+      paste(as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1]),
+            as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 6]),
+            geni[i],
+            sep = "_")
+    
+    #mFinaleCGglobali <- cbind(mFinaleCGglobali, m1)
+    m1
+    #rm(m1)
   }
-  
-  #inserisco i valori del gene di riferimento
-  m1 <-
-    data.frame(sapply(m1, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
-  m1
-  #mFinaleCGglobali <- cbind(mFinaleCGglobali, m1)
-  #rm(m1)
-}
 
 # mFinaleCGglobali <-
 #   mFinaleCGglobali[, -1]
@@ -361,59 +374,67 @@ row.names(mFinaleCGglobali)[nrow(mFinaleCGglobali)] <- "island"
 mFinaleCGglobali <- t(mFinaleCGglobali)
 
 write.xlsx(mFinaleCGglobali, "CG_Globali.xlsx", sheetName = "Sheet1")
-
+remove(mFinaleCGglobali,a)
+gc()
 ###CG unificati
+
 mFinaleCGunificati <- foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
-  m <-
-    data.frame(matrix(
-      DFCGorder[, i],
-      nrow = 473,
-      ncol = length(DFCGorder[, i]) / 473
-    ))
-  
-  colnames(m) <-
-    as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
-  
-  
-  keep.cols <- names(m) %in% NA
-  m <- m [!keep.cols]
-  colnames(m) <- paste(names(m), geni[i], sep = "_")
-  
-  
-  m4 <- m
-  m4 <- as.data.frame(m4[, colSums(is.na(m4)) != nrow(m4)])
-  num_CG <- length(m4)
-  
-  if (dim(m4)[2] != 0) {
-    if (dim(m4)[2] != 1) {
-      m4 <- stack(m4)
-      m4 <- as.matrix(m4[,-2])
-    }
-    num_row_m4 <- nrow(m4)
-    m4 <- cbind(m4, stratification)
-    colnames(m4) <- c("value", "stratification")
-    m4 <- Analisi(m4)
-    m4 <- as.data.frame(m4[,-2])
+
+    m <-
+      data.frame(matrix(
+        DFCGorder[, i],
+        nrow = 473,
+        ncol = length(DFCGorder[, i]) / 473
+      ))
     
-    # nome_colonne_cgUniti <-paste("CG", geni[i], sep = "_")
-    #   #paste(nome_colonne_cgUniti, paste("CG", geni[i], sep = "_"), sep = ",")
-    names(m4) <- "value"
+    colnames(m) <-
+      as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
     
-    dfTmp <- as.data.frame(rep(dfPancan2[c(1:473), geni[i]], num_CG))
-    m4Tmp <- as.data.frame(m4[c(1:num_row_m4), ])
-    a <- corr.test(dfTmp, m4Tmp, adjust = "none")
-    m4 <-
-      rbind(m4, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
     
-    #eliminare le righe dei valori dei cg
-    m4 <- as.data.frame(m4[-c(1:num_row_m4),])
-    m4 <-
-      data.frame(sapply(m4, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
-    colnames(m4) <- paste("CG", geni[i], sep = "_")
-    m4
-    #mFinaleCGunificati <- cbind(mFinaleCGunificati, m4)
+    keep.cols <- names(m) %in% NA
+    m <- m [!keep.cols]
+    colnames(m) <- paste(names(m), geni[i], sep = "_")
+    
+    
+    m4 <- m
+    m4 <- as.data.frame(m4[, colSums(is.na(m4)) != nrow(m4)])
+    num_CG <- length(m4)
+    
+    if (dim(m4)[2] != 0) {
+      if (dim(m4)[2] != 1) {
+        m4 <- stack(m4)
+        m4 <- as.matrix(m4[,-2])
+      }
+      num_row_m4 <- nrow(m4)
+      m4 <- cbind(m4, stratification)
+      colnames(m4) <- c("value", "stratification")
+      m4 <- Analisi(m4)
+      m4 <- as.data.frame(m4[,-2])
+      
+      # nome_colonne_cgUniti <-paste("CG", geni[i], sep = "_")
+      #   #paste(nome_colonne_cgUniti, paste("CG", geni[i], sep = "_"), sep = ",")
+      names(m4) <- "value"
+      
+      dfTmp <-
+        as.data.frame(rep(dfPancan2[c(1:473), geni[i]], num_CG))
+      m4Tmp <- as.data.frame(m4[c(1:num_row_m4), ])
+      a <- corr.test(dfTmp, m4Tmp, adjust = "none")
+      m4 <-
+        rbind(m4, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
+      
+      #eliminare le righe dei valori dei cg
+      m4 <- as.data.frame(m4[-c(1:num_row_m4),])
+      m4 <-
+        data.frame(sapply(m4, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
+      colnames(m4) <- paste("CG", geni[i], sep = "_")
+      m4
+      #mFinaleCGunificati <- cbind(mFinaleCGunificati, m4)
+    }else{
+       m4<-as.data.frame(matrix(NA,nrow = 17,ncol = 1))
+       colnames(m4) <- paste("CG", geni[i], sep = "_")
+       m4
+     }
   }
-}
 
 # mFinaleCGunificati <-
 #   mFinaleCGunificati[, -1]
@@ -428,25 +449,26 @@ mFinaleCGunificati <- t(mFinaleCGunificati)
 write.xlsx(mFinaleCGunificati, "CG_unificati.xlsx", sheetName = "Sheet1")
 
 ###CG secondo la posizione nel gene (TS, Body ecc)
-mFinaleCGposition <- foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
-  m <-
-    data.frame(matrix(
-      DFCGorder[, i],
-      nrow = 473,
-      ncol = length(DFCGorder[, i]) / 473
-    ))
-  
-  colnames(m) <-
-    as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
-  
-  
-  keep.cols <- names(m) %in% NA
-  m <- m [!keep.cols]
-  colnames(m) <- paste(names(m), geni[i], sep = "_")
-  
-  Analisi2(lengthPosizioni,i,posizioni,"posizione")
-  
-}
+mFinaleCGposition <-
+  foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
+    m <-
+      data.frame(matrix(
+        DFCGorder[, i],
+        nrow = 473,
+        ncol = length(DFCGorder[, i]) / 473
+      ))
+    
+    colnames(m) <-
+      as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
+    
+    
+    keep.cols <- names(m) %in% NA
+    m <- m [!keep.cols]
+    colnames(m) <- paste(names(m), geni[i], sep = "_")
+    
+    Analisi2(lengthPosizioni, i, posizioni, "posizione")
+    
+  }
 
 # mFinaleCGposition <-
 #   mFinaleCGposition[, -1]
@@ -461,25 +483,26 @@ mFinaleCGposition <- t(mFinaleCGposition)
 write.xlsx(mFinaleCGposition, "CG_poszione_gene.xlsx", sheetName = "Sheet1")
 
 ###CG secondo le isole CpG
-mFinaleCGisland <- foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
-  m <-
-    data.frame(matrix(
-      DFCGorder[, i],
-      nrow = 473,
-      ncol = length(DFCGorder[, i]) / 473
-    ))
-  
-  colnames(m) <-
-    as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
-  
-  
-  keep.cols <- names(m) %in% NA
-  m <- m [!keep.cols]
-  colnames(m) <- paste(names(m), geni[i], sep = "_")
-  
-  Analisi2(lengthIsole, i, isole, "island")
-  
-}
+mFinaleCGisland <-
+  foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
+    m <-
+      data.frame(matrix(
+        DFCGorder[, i],
+        nrow = 473,
+        ncol = length(DFCGorder[, i]) / 473
+      ))
+    
+    colnames(m) <-
+      as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
+    
+    
+    keep.cols <- names(m) %in% NA
+    m <- m [!keep.cols]
+    colnames(m) <- paste(names(m), geni[i], sep = "_")
+    
+    Analisi2(lengthIsole, i, isole, "island")
+    
+  }
 
 # mFinaleCGisland <-
 #   mFinaleCGisland[, -1]
@@ -493,7 +516,9 @@ mFinaleCGisland <- t(mFinaleCGisland)
 
 write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
 
-
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
 
 
 
@@ -509,42 +534,42 @@ write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
 #         nrow = 473,
 #         ncol = length(DFCGorder[, i]) / 473
 #       ))
-#     
+#
 #     colnames(m) <-
 #       as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
-#     
-#     
+#
+#
 #     keep.cols <- names(m) %in% NA
 #     m <- m [!keep.cols]
 #     colnames(m) <- paste(names(m), geni[i], sep = "_")
-#     
+#
 #     ###GC globali
 #     m1 <- m
 #     #conservo gli indici delle colonne NA per poi reinserirli alla fine
 #     columnNA <- which(sapply(m1, function(x)
 #       all(is.na(x))))
-#     
+#
 #     #rimuovo colonne NA
 #     m1 <- m1[, colSums(is.na(m1)) != nrow(m1)]
-#     
+#
 #     if (length(m1) != 0) {
 #       m1 <- cbind(m1, stratification)
 #       m1 <- Analisi(m1)
 #       m1$stratification <- NULL
 #     }
-#     
+#
 #     if (length(columnNA) != 0) {
 #       for (j in 1:length(columnNA)) {
 #         m1 <- insertCol(as.matrix(m1), columnNA[[j]], v = NA)
 #       }
 #     }
-#     
+#
 #     colnames(m1) <-
 #       paste(as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1]),
 #             as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 6]),
 #             geni[i],
 #             sep = "_")
-#     
+#
 #     #prima di eliminare le righe dei valori calcolare la correlazione
 #     #tra valore gene e singolo CG
 #     c <- as.data.frame(dfPancan2[c(1:473), geni[i]])
@@ -552,7 +577,7 @@ write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
 #     a <- corr.test(c, mTmp, adjust = "none")
 #     m1 <-
 #       rbind(m1, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
-#     
+#
 #     #tale controllo viene fatto per evitare che una colonna di NA di m1 venga eliminata
 #     #del tutto. Così facendo non ho problemi con eventuali cbind.
 #     if (dim(m1)[1] > 473) {
@@ -562,14 +587,14 @@ write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
 #       m1 <-
 #         as.data.frame(m1[-c(1:464), ])
 #     }
-#     
+#
 #     #inserisco i valori del gene di riferimento
 #     m1 <-
 #       data.frame(sapply(m1, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
-#     
+#
 #     mFinaleCGglobali <- cbind(mFinaleCGglobali, m1)
 #     rm(m1)
-#     
+#
 #     ###CG secondo la posizione nel gene (TS, Body ecc)
 #     mFinaleCGposition <-
 #       cbind(
@@ -583,19 +608,19 @@ write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
 #           T
 #         )
 #       )
-#     
+#
 #     ###CG secondo le isole CpG
 #     mFinaleCGisland <-
 #       cbind(
 #         mFinaleCGisland,
 #         Analisi2(lengthIsole, i, isole, "island", nome_colonne_island, F)
 #       )
-#     
+#
 #     ###CG unificati
 #     m4 <- m
 #     m4 <- as.data.frame(m4[, colSums(is.na(m4)) != nrow(m4)])
 #     num_CG <- length(m4)
-#     
+#
 #     if (dim(m4)[2] != 0) {
 #       if (dim(m4)[2] != 1) {
 #         m4 <- stack(m4)
@@ -606,33 +631,33 @@ write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
 #       colnames(m4) <- c("value", "stratification")
 #       m4 <- Analisi(m4)
 #       m4 <- as.data.frame(m4[,-2])
-#       
+#
 #       nome_colonne_cgUniti <-
 #         paste(nome_colonne_cgUniti, paste("CG", geni[i], sep = "_"), sep = ",")
 #       names(m4) <- "value"
-#       
+#
 #       dfTmp <-
 #         as.data.frame(rep(dfPancan2[c(1:473), geni[i]], num_CG))
 #       m4Tmp <- as.data.frame(m4[c(1:num_row_m4), ])
 #       a <- corr.test(dfTmp, m4Tmp, adjust = "none")
 #       m4 <-
 #         rbind(m4, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
-#       
+#
 #       #eliminare le righe dei valori dei cg
 #       m4 <- as.data.frame(m4[-c(1:num_row_m4),])
 #       m4 <-
 #         data.frame(sapply(m4, c, unlist(valExprGene[, geni[i]])), row.names = NULL)
-#       
-#       
+#
+#
 #       mFinaleCGunificati <- cbind(mFinaleCGunificati, m4)
 #     }
 #     rm(m4)
 #     gc()
-#     
+#
 #   }, error = function(error_condition) {
 #     print(error_condition)
 #     print("valore di i: ")
 #     print(i)
 #   })
-#   
+#
 # }
