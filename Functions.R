@@ -195,11 +195,11 @@ Analisi2 <- function(leng,index,position,column) {
         
         #eliminare colonne tutte NA
         m2 <- as.data.frame(m2[, colSums(is.na(m2)) != nrow(m2)])
-        if (dim(m2)[2] != 0) {
-          if (dim(m2)[2] != 1) {
+        #if (dim(m2)[2] != 0) {
+          if (dim(m2)[2] > 1) {
             m2 <- stack(m2)
             m2 <- as.matrix(m2[, -2])
-          }
+          #}
           num_row <- nrow(m2)
           m2 <- cbind(m2, stratification)
           colnames(m2) <- c("value", "stratification")
@@ -225,36 +225,7 @@ Analisi2 <- function(leng,index,position,column) {
       }
     }
   
-  #return(mFinale[,-1])
    return(subset(mFinale, select = -c(1)))
-}
-
-myNormShapiro <- function(x) {
-  DNAME <- deparse(substitute(x))
-  stopifnot(is.numeric(x))
-  x <- sort(x[complete.cases(x)])
-  n <- length(x)
-  if (is.na(n) || n < 3L || n > 5000L)
-    stop("sample size must be between 3 and 5000")
-  rng <- x[n] - x[1L]
-  if (rng != 0) {
-    if (rng < 1e-10)
-      x <- x / rng
-    res <- .Call(C_SWilk, x)
-  }
-  else{
-    res <- c(NA, NA)
-  }
-  
-  RVAL <- list(
-    statistic = c(W = res[1]),
-    p.value = res[2],
-    method = "Shapiro-Wilk normality test",
-    data.name = DNAME
-  )
-  class(RVAL) <- "htest"
-  return(RVAL)
-  
 }
 
 setRowNames <- function(df) {
