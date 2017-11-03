@@ -182,24 +182,9 @@ Analisi <- function(matrix1) {
 
 #utilizzata per i raggruppamenti cg per isole e posizioni
 Analisi2 <- function(leng,index,position,column) {
-  # library(doParallel)
-  # library(foreach)
-  # cl <- makeCluster(2)
-  # registerDoParallel(cl)
-  # clusterCall(cl, function()
-  #   library(plyr))
-  # clusterCall(cl, function()
-  #   library(miscTools))
-  # clusterCall(cl, function()
-  #   library(psych))
+
    mFinale <- data.frame(matrix())
   
-  # mFinale <-
-  #   foreach(
-  #     k = 1:leng,
-  #     .export = c("dfCGunique", "geni", "m", "stratification","Analisi"),
-  #     .combine = cbind
-  #   ) %dopar% {
   for(k in 1:leng){
       cg <-
         as.vector(dfCGunique[which(dfCGunique$gene %in% geni[index] &
@@ -222,13 +207,10 @@ Analisi2 <- function(leng,index,position,column) {
           m2 <- Analisi(m2)
           m2 <- as.data.frame(m2[, -2])
           
-          # nome_col <-
-          #   paste(nome_col,
-          #         paste(position[k], geni[index], sep = "_"),
-          #         sep = ",")
+          c <- as.data.frame(rep(dfPancan2[c(1:473), geni[i]], length(cg)))
           
-          c <- as.data.frame(dfPancan2[c(1:473), geni[i]])
-          mTmp <- as.data.frame(m2[c(1:473), ])
+          mTmp <- as.data.frame(m2[1:dim(c)[1],])
+
           a <- corr.test(c, mTmp, adjust = "none")
           m2 <-
             rbind(m2, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
@@ -243,12 +225,8 @@ Analisi2 <- function(leng,index,position,column) {
       }
     }
   
-  # if (flag)
-  #   assign('nome_colonne_position', nome_col, envir = .GlobalEnv)
-  # else
-  #   assign('nome_colonne_island', nome_col, envir = .GlobalEnv)
-  
-  return(mFinale[,-1])
+  #return(mFinale[,-1])
+   return(subset(mFinale, select = -c(1)))
 }
 
 myNormShapiro <- function(x) {

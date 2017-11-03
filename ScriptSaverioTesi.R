@@ -12,13 +12,14 @@ library(foreach)
 
 dataIsLinearUser = F
 no_cores <- detectCores()/2
-
+#nameFD<-"1-1000"
+#dir.create(file.path("/home/giuseppe/ScriptSaverio/dest", nameFD))
 source("Functions.R")
 
 dfPancan <-
   fread("dataset/pancan_normalized/genomicMatrix",
         header = T,
-        sep = "\t")[20020:20530, ]
+        sep = "\t")[1001:1501, ]
 
 dfGpl <-
   fread(
@@ -347,7 +348,7 @@ row.names(mFinaleCGglobali)[nrow(mFinaleCGglobali)] <- "island"
 
 mFinaleCGglobali <- t(mFinaleCGglobali)
 
-write.xlsx(mFinaleCGglobali, "CG_Globali.xlsx", sheetName = "Sheet1")
+write.xlsx(mFinaleCGglobali, paste("/home/giuseppe/ScriptSaverio/dest",nameFD,"CG_Globali.xlsx",sep = "/"), sheetName = "Sheet1")
 remove(mFinaleCGglobali,a)
 gc()
 
@@ -412,9 +413,10 @@ mFinaleCGunificati <- setRowNames(mFinaleCGunificati)
 
 mFinaleCGunificati <- t(mFinaleCGunificati)
 
-write.xlsx(mFinaleCGunificati, "CG_unificati.xlsx", sheetName = "Sheet1")
+write.xlsx(mFinaleCGunificati, paste("/home/giuseppe/ScriptSaverio/dest",nameFD,"CG_unificati.xlsx",sep = "/"), sheetName = "Sheet1")
 
 ###CG secondo la posizione nel gene (TS, Body ecc)
+
 mFinaleCGposition <-
   foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
     m <-
@@ -441,7 +443,7 @@ mFinaleCGposition <- setRowNames(mFinaleCGposition)
 
 mFinaleCGposition <- t(mFinaleCGposition)
 
-write.xlsx(mFinaleCGposition, "CG_poszione_gene.xlsx", sheetName = "Sheet1")
+write.xlsx(mFinaleCGposition, paste("/home/giuseppe/ScriptSaverio/dest",nameFD,"CG_posizione_gene.xlsx",sep = "/") , sheetName = "Sheet1")
 
 ###CG secondo le isole CpG
 mFinaleCGisland <-
@@ -469,4 +471,4 @@ mFinaleCGisland <- setRowNames(mFinaleCGisland)
 
 mFinaleCGisland <- t(mFinaleCGisland)
 
-write.xlsx(mFinaleCGisland, "CG_isole_gene.xlsx", sheetName = "Sheet1")
+write.xlsx(mFinaleCGisland, paste("/home/giuseppe/ScriptSaverio/dest",nameFD,"CG_isole_gene.xlsx",sep = "/") , sheetName = "Sheet1")
