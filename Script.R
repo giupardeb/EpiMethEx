@@ -11,19 +11,27 @@ library(doParallel)
 library(foreach)
 
 dataIsLinearUser = F
-no_cores <- detectCores()/2
-#nameFD<-"1-1000"
-#dir.create(file.path("/home/giuseppe/ScriptSaverio/dest", nameFD))
+no_cores <- detectCores() / 2
+
+nameFolderDest <- "/home/giuseppe/dest"
+dir.create(file.path(nameFolderDest), showWarnings = FALSE)
+nameFD <- "1-1000"
+dir.create(file.path(nameFolderDest, nameFD))
+
+PathDatasetPancan <- "dataset/pancan_normalized/genomicMatrix"
+PathDatasetProbe <- "dataset/probe/GPL13534-11288.txt"
+PathDatasetMethylation <- "dataset/Methylation450k/genomicMatrix"
+
 source("Functions.R")
 
 dfPancan <-
-  fread("dataset/pancan_normalized/genomicMatrix",
+  fread(PathDatasetPancan,
         header = T,
         sep = "\t")[1001:1501, ]
 
 dfGpl <-
   fread(
-    "dataset/probe/GPL13534-11288.txt",
+    PathDatasetProbe,
     sep = "\t",
     header = F ,
     skip = 37,
@@ -39,7 +47,7 @@ dfGpl$island <-
 dfGpl <- dfGpl[, -c('V26', 'V25')]
 
 dfMethylation <<-
-  fread("dataset/Methylation450k/genomicMatrix", sep = "\t")
+  fread(PathDatasetMethylation, sep = "\t")
 
 # transpose all but the first column (name)
 dfPancan2 <- as.data.frame(t(dfPancan[, -1]))
@@ -68,6 +76,7 @@ dfPancan2 <- as.data.frame(dfPancan2)
 index <-
   which.max(apply(dfPancan2, 2, function(x)
     length(unique(x))))[[1]]
+
 dfPancan2$variable <-
   with(dfPancan2,
        bin.var(
@@ -129,7 +138,7 @@ resultUPvsDOWN <- as.data.frame(t(resultUPvsDOWN))
 resultMIDvsDOWN <- as.data.frame(t(resultMIDvsDOWN))
 colnames(resultUPvsMID) <- colnames(dfPancan2[, -ncol(dfPancan2)])
 colnames(resultUPvsDOWN) <- colnames(dfPancan2[, -ncol(dfPancan2)])
-colnames(resultMIDvsDOWN) <-colnames(dfPancan2[, -ncol(dfPancan2)])
+colnames(resultMIDvsDOWN) <- colnames(dfPancan2[, -ncol(dfPancan2)])
 
 dfPancan2 <-
   rbind.fill(dfPancan2, resultUPvsMID, resultUPvsDOWN, resultMIDvsDOWN)
@@ -188,7 +197,7 @@ maxOccurence <-
   max(as.data.frame(table(unlist(dfAnnotations$gene)))$Freq)
 
 #reorder genes related CG
-#Riordino per ogni gene i cg relativi
+
 dfAnnotations <- dfAnnotations %>% arrange(gene, V16)
 
 #adesso creo un dataframe dei CG per ogni gene con l'ordine indicato da indexTCGA
@@ -202,13 +211,16 @@ dfMethylation$sample <- as.factor(dfMethylation$sample)
 dfMethylation <- as.data.frame(dfMethylation)
 rownames(dfMethylation) <- dfMethylation$sample
 setkey(as.data.table(dfMethylation), sample)
+
 gc()
+
 tmp <- tapply(lapply(1:nrow(dfCGunique),
                      function (i)
                        (dfMethylation[as.vector(dfCGunique[i, 1]), as.vector(indexTCGA[, as.vector(dfCGunique[i, "gene"])])])),
               factor(dfCGunique[, "gene"]), function (x) {
                 unname(unlist(x))
               })
+
 max.rows <- max(sapply(tmp, length))
 DFCGorder <-
   do.call(cbind, lapply(tmp, function(x) {
@@ -216,8 +228,6 @@ DFCGorder <-
     return (x)
   }))
 
-### <<<<<<<<<<<<<<<FASE I:
-### CREAZIONE, PER OGNI GENE, TABELLE CONTENENTI CG APPARTENENTI AI VARI GRUPPI CON CALCOLO FC PVALUE>>>>>>>
 
 valExprGene <-
   dfPancan2[c(480:482, 484, 486, 488), -ncol(dfPancan2)]
@@ -260,7 +270,7 @@ clusterCall(cl, function()
 ###GC globali
 mFinaleCGglobali <-
   foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
-  flag<-F
+    flag <- F
     m <-
       data.frame(matrix(
         DFCGorder[, i],
@@ -288,8 +298,8 @@ mFinaleCGglobali <-
       m1 <- cbind(m1, stratification)
       m1 <- Analisi(m1)
       m1$stratification <- NULL
-    }else{
-      flag<-T
+    } else{
+      flag <- T
     }
     
     if (length(columnNA) != 0) {
@@ -298,9 +308,9 @@ mFinaleCGglobali <-
       }
     }
     
-    if(flag){
-      df <- as.data.frame(matrix(NA,nrow = 9,ncol = dim(m1)[2]))
-      m1<- rbind(m1,df)
+    if (flag) {
+      df <- as.data.frame(matrix(NA, nrow = 9, ncol = dim(m1)[2]))
+      m1 <- rbind(m1, df)
     }
     
     #prima di eliminare le righe dei valori calcolare la correlazione
@@ -335,7 +345,7 @@ mFinaleCGglobali <-
             sep = "_")
     
     m1
-
+    
   }
 
 mFinaleCGglobali <- setRowNames(mFinaleCGglobali)
@@ -348,33 +358,37 @@ row.names(mFinaleCGglobali)[nrow(mFinaleCGglobali)] <- "island"
 
 mFinaleCGglobali <- t(mFinaleCGglobali)
 
-write.xlsx(mFinaleCGglobali, paste("/home/giuseppe/ScriptSaverio/dest",nameFD,"CG_Globali.xlsx",sep = "/"), sheetName = "Sheet1")
-remove(mFinaleCGglobali,a)
+write.xlsx(
+  mFinaleCGglobali,
+  paste(nameFolderDest, nameFD, "CG_Globali.xlsx", sep = "/"),
+  sheetName = "Sheet1"
+)
+remove(mFinaleCGglobali, a)
 gc()
 
 ###CG unificati
-mFinaleCGunificati <- foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
-
+mFinaleCGunificati <-
+  foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
     m <-
       data.frame(matrix(
         DFCGorder[, i],
         nrow = 473,
         ncol = length(DFCGorder[, i]) / 473
       ))
-
+    
     colnames(m) <-
       as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
-
-
+    
+    
     keep.cols <- names(m) %in% NA
     m <- m [!keep.cols]
     colnames(m) <- paste(names(m), geni[i], sep = "_")
-
-
+    
+    
     m4 <- m
     m4 <- as.data.frame(m4[, colSums(is.na(m4)) != nrow(m4)])
     num_CG <- length(m4)
-
+    
     if (dim(m4)[2] != 0) {
       if (dim(m4)[2] != 1) {
         m4 <- stack(m4)
@@ -385,16 +399,16 @@ mFinaleCGunificati <- foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
       colnames(m4) <- c("value", "stratification")
       m4 <- Analisi(m4)
       m4 <- as.data.frame(m4[,-2])
-
+      
       names(m4) <- "value"
-
+      
       dfTmp <-
         as.data.frame(rep(dfPancan2[c(1:473), geni[i]], num_CG))
       m4Tmp <- as.data.frame(m4[c(1:num_row_m4), ])
       a <- corr.test(dfTmp, m4Tmp, adjust = "none")
       m4 <-
         rbind(m4, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
-
+      
       #eliminare le righe dei valori dei cg
       m4 <- as.data.frame(m4[-c(1:num_row_m4),])
       m4 <-
@@ -402,18 +416,22 @@ mFinaleCGunificati <- foreach(i = 1:lengthGeni, .combine = cbind) %dopar% {
       colnames(m4) <- paste("CG", geni[i], sep = "_")
       m4
       #mFinaleCGunificati <- cbind(mFinaleCGunificati, m4)
-    }else{
-       m4<-as.data.frame(matrix(NA,nrow = 17,ncol = 1))
-       colnames(m4) <- paste("CG", geni[i], sep = "_")
-       m4
-     }
+    } else{
+      m4 <- as.data.frame(matrix(NA, nrow = 17, ncol = 1))
+      colnames(m4) <- paste("CG", geni[i], sep = "_")
+      m4
+    }
   }
 
 mFinaleCGunificati <- setRowNames(mFinaleCGunificati)
 
 mFinaleCGunificati <- t(mFinaleCGunificati)
 
-write.xlsx(mFinaleCGunificati, paste("/home/giuseppe/ScriptSaverio/dest",nameFD,"CG_unificati.xlsx",sep = "/"), sheetName = "Sheet1")
+write.xlsx(
+  mFinaleCGunificati,
+  paste(nameFolderDest, nameFD, "CG_unificati.xlsx", sep = "/"),
+  sheetName = "Sheet1"
+)
 
 ###CG secondo la posizione nel gene (TS, Body ecc)
 
@@ -425,17 +443,17 @@ mFinaleCGposition <-
         nrow = 473,
         ncol = length(DFCGorder[, i]) / 473
       ))
-
+    
     colnames(m) <-
       as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
-
-
+    
+    
     keep.cols <- names(m) %in% NA
     m <- m [!keep.cols]
     colnames(m) <- paste(names(m), geni[i], sep = "_")
-
+    
     Analisi2(lengthPosizioni, i, posizioni, "posizione")
-
+    
   }
 
 
@@ -443,7 +461,11 @@ mFinaleCGposition <- setRowNames(mFinaleCGposition)
 
 mFinaleCGposition <- t(mFinaleCGposition)
 
-write.xlsx(mFinaleCGposition, paste("/home/giuseppe/ScriptSaverio/dest",nameFD,"CG_posizione_gene.xlsx",sep = "/") , sheetName = "Sheet1")
+write.xlsx(
+  mFinaleCGposition,
+  paste(nameFolderDest, nameFD, "CG_posizione_gene.xlsx", sep = "/") ,
+  sheetName = "Sheet1"
+)
 
 ###CG secondo le isole CpG
 mFinaleCGisland <-
@@ -454,21 +476,25 @@ mFinaleCGisland <-
         nrow = 473,
         ncol = length(DFCGorder[, i]) / 473
       ))
-
+    
     colnames(m) <-
       as.character(dfCGunique[which(dfCGunique$gene %in% geni[i]), 1])
-
-
+    
+    
     keep.cols <- names(m) %in% NA
     m <- m [!keep.cols]
     colnames(m) <- paste(names(m), geni[i], sep = "_")
-
+    
     Analisi2(lengthIsole, i, isole, "island")
-
+    
   }
 
 mFinaleCGisland <- setRowNames(mFinaleCGisland)
 
 mFinaleCGisland <- t(mFinaleCGisland)
 
-write.xlsx(mFinaleCGisland, paste("/home/giuseppe/ScriptSaverio/dest",nameFD,"CG_isole_gene.xlsx",sep = "/") , sheetName = "Sheet1")
+write.xlsx(
+  mFinaleCGisland,
+  paste(nameFolderDest, nameFD, "CG_isole_gene.xlsx", sep = "/") ,
+  sheetName = "Sheet1"
+)
