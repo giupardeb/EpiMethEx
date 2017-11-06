@@ -45,6 +45,6 @@
   
   * `PathDatasetMethylation`path assoluto del dataset **genomicMatrix** all'interno della cartella **Methylation450k**
   
-3. Nella riga 30, cambiare il range, all'interno delle parentesi quadre, con quello desiderato. 
+3. In row 30, within square brackets change the range genes
 
 **_MAX range of 1000 genes with PC configuration: RAM: 32GB CORES: 8_**
