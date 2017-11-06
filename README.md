@@ -21,7 +21,7 @@
   
 3. Nella riga 30, cambiare il range, all'interno delle parentesi quadre, con quello desiderato. 
 
-**_MAX range di 1000 geni per una congifurazione di PC: RAM: 32GB CORES: 8_**
+**_MAX range di geni: 1000 con una congifurazione di PC: RAM: 32GB CORES: 8_**
 
 
 ### HOW-TO
@@ -47,4 +47,4 @@
   
 3. In row 30, within square brackets change the range genes
 
-**_MAX range of 1000 genes with PC configuration: RAM: 32GB CORES: 8_**
+**_MAX range of genes: 1000 with PC configuration: RAM: 32GB CORES: 8_**
