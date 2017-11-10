@@ -48,3 +48,5 @@
 3. In row 30, within square brackets change the range genes
 
 **_MAX range of genes: 1000 with PC configuration: RAM: 32GB CORES: 8_**
+
+### HOW-TO FILTER DATA
