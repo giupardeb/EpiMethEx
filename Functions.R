@@ -1,7 +1,8 @@
 calcBetaDifference <- function(matrix3) {
-  medianUP <- matrix3[nrow(matrix3),-ncol(matrix3)]
-  medianMID <- matrix3[nrow(matrix3) - 1,-ncol(matrix3)]
-  medianDOWN <- matrix3[nrow(matrix3) - 2,-ncol(matrix3)]
+  
+  medianUP <- matrix3[nrow(matrix3), -ncol(matrix3)]
+  medianMID <- matrix3[nrow(matrix3) - 1, -ncol(matrix3)]
+  medianDOWN <- matrix3[nrow(matrix3) - 2, -ncol(matrix3)]
   
   if (dim(matrix3)[2] == 2) {
     bd_UPvsMID <- data.frame(value = medianUP - medianMID)
@@ -11,9 +12,9 @@ calcBetaDifference <- function(matrix3) {
     bd_UPvsMID <- data.frame(medianUP - medianMID)
     bd_UPvsDOWN <- data.frame(medianUP - medianDOWN)
     bd_MIDvsDOWN <- data.frame(medianMID - medianDOWN)
-    colnames(bd_UPvsMID)<- colnames(matrix3[,-ncol(matrix3)])
-    colnames(bd_UPvsDOWN)<- colnames(matrix3[,-ncol(matrix3)])
-    colnames(bd_MIDvsDOWN)<- colnames(matrix3[,-ncol(matrix3)])
+    colnames(bd_UPvsMID) <- colnames(matrix3[, -ncol(matrix3)])
+    colnames(bd_UPvsDOWN) <- colnames(matrix3[, -ncol(matrix3)])
+    colnames(bd_MIDvsDOWN) <- colnames(matrix3[, -ncol(matrix3)])
   }
   
   matrix3 <- rbind.fill(matrix3, bd_UPvsMID, bd_UPvsDOWN, bd_MIDvsDOWN)
@@ -22,11 +23,12 @@ calcBetaDifference <- function(matrix3) {
 }
 
 calcFC <- function(matrix2, dataIsLinear) {
+  
   df <- data.frame()
   
-  meanUp <- matrix2[nrow(matrix2),-ncol(matrix2)]
-  meanMid <- matrix2[nrow(matrix2) - 1,-ncol(matrix2)]
-  meanDown <- matrix2[nrow(matrix2) - 2,-ncol(matrix2)]
+  meanUp <- matrix2[nrow(matrix2), -ncol(matrix2)]
+  meanMid <- matrix2[nrow(matrix2) - 1, -ncol(matrix2)]
+  meanDown <- matrix2[nrow(matrix2) - 2, -ncol(matrix2)]
   
   if (dataIsLinear) {
     fc_UPvsMID <- setFC(meanUp, meanMid)
@@ -39,8 +41,7 @@ calcFC <- function(matrix2, dataIsLinear) {
   }
   
   df <- rbind(df, fc_UPvsMID, fc_UPvsDOWN, fc_MIDvsDOWN)
-  
-  colnames(df) <- colnames(matrix2[, -ncol(matrix2)])
+  colnames(df) <- colnames(matrix2[,-ncol(matrix2)])
   
   matrix2 <- rbind.fill(matrix2, df)
   remove(df)
@@ -50,10 +51,12 @@ calcFC <- function(matrix2, dataIsLinear) {
 
 
 checkSign <- function(a, b) {
+  
   return (sign(a) == sign(b))
 }
 
 setFClog <- function(meanFirstGroup, meanSecondGroup) {
+  
   fold <- 2 ^ (abs(meanFirstGroup - meanSecondGroup))
   
   fc <- lapply(seq_along(fold), function(i) {
@@ -66,9 +69,10 @@ setFClog <- function(meanFirstGroup, meanSecondGroup) {
   })
   
   return(fc)
-  
 }
+
 setFC <- function(meanFirstGroup, meanSecondGroup) {
+  
   maxabs <- mapply(max, abs(meanFirstGroup), abs(meanSecondGroup))
   minabs <- mapply(min, abs(meanFirstGroup), abs(meanSecondGroup))
   max <- mapply(max, meanFirstGroup, meanSecondGroup)
@@ -95,8 +99,9 @@ setFC <- function(meanFirstGroup, meanSecondGroup) {
   return(fold)
 }
 
-#Utilizzato nell'analisi dei Geni
+#Utilizzato nell'analisi dei genes
 ttester <- function(array1, array2) {
+  
   if (sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T) != 0) {
     A <- t.test(array1, array2,
                 var.equal = F)[c('statistic', 'p.value')]
@@ -107,11 +112,11 @@ ttester <- function(array1, array2) {
 }
 
 #Utilizzato nell'analisi dei CG
-
 t_tester <- function(array1, array2) {
+  
   difference <- sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T)
+  
   if (difference != 0 || is.na(difference)) {
-    #risolve l'errore Error in t.test not enough 'y' observations
     tryCatch({
       A <- ks.test(array1, array2)[c('p.value')]
     }, error = function(error_condition) {
@@ -119,43 +124,28 @@ t_tester <- function(array1, array2) {
     })
     
     return(c(A$p.value))
-    
   }
 }
 
-
 Analisi <- function(matrix1) {
-  medianUP <-
-    apply(as.data.frame(matrix1[which(matrix1$stratification %in% "UP"), -ncol(matrix1)]), 2, median, na.rm =
-            T)
-  medianMID <-
-    apply(as.data.frame(matrix1[which(matrix1$stratification %in% "Medium"), -ncol(matrix1)]), 2, median, na.rm =
-            T)
-  medianDOWN <-
-    apply(as.data.frame(matrix1[which(matrix1$stratification %in% "Down"), -ncol(matrix1)]), 2, median, na.rm =
-            T)
-  #inserisco alla fine della colonna di ogni gene la MEDIA DEL GRUPPO DOWN perché è sempre dispari
-  #df <- data.frame()
   
-  #df <- rbind(df, medianDOWN,medianMID,medianUP)
-  
+  medianUP <- apply(as.data.frame(matrix1[which(matrix1$stratification %in% "UP"),-ncol(matrix1)]), 2, median, na.rm = T)
+  medianMID <- apply(as.data.frame(matrix1[which(matrix1$stratification %in% "Medium"),-ncol(matrix1)]), 2, median, na.rm = T)
+  medianDOWN <- apply(as.data.frame(matrix1[which(matrix1$stratification %in% "Down"),-ncol(matrix1)]), 2, median, na.rm = T)
+
   if (dim(matrix1)[2] == 2) {
-    #colnames(df)<-"value"
     colnames(matrix1) <- c("value", "stratification")
     colnamesDfTtest <- "value"
     dimM <- 1
   } else{
-    #colnames(df) <- colnames(matrix1[,-ncol(matrix1)])
-    dimM <- dim(matrix1[,-ncol(matrix1)])[2]
-    colnamesDfTtest <- colnames(matrix1[, -ncol(matrix1)])
+    dimM <- dim(matrix1[, -ncol(matrix1)])[2]
+    colnamesDfTtest <- colnames(matrix1[,-ncol(matrix1)])
   }
   
-  dfTtest <-
-    setNames(data.frame(matrix(nrow = 3, ncol = dimM)), colnamesDfTtest)
+  dfTtest <- setNames(data.frame(matrix(nrow = 3, ncol = dimM)), colnamesDfTtest)
   
-  #matrix1 <- rbind.fill(matrix1, df)
   matrix1 <- rbind(matrix1, medianDOWN, medianMID, medianUP)
-  #remove(df)
+  
   remove(medianUP, medianMID, medianDOWN)
   
   matrix1 <- calcBetaDifference(matrix1)
@@ -164,11 +154,9 @@ Analisi <- function(matrix1) {
     #UPvsMID
     dfTtest[1, k] <-
       t_tester(matrix1[which(matrix1$stratification %in% "UP"), k], matrix1[which(matrix1$stratification %in% "Medium"), k])
-    
     #UPvsDOWN
     dfTtest[2, k] <-
       t_tester(matrix1[which(matrix1$stratification %in% "UP"), k], matrix1[which(matrix1$stratification %in% "Down"), k])
-    
     #MIDvsDOWN
     dfTtest[3, k] <-
       t_tester(matrix1[which(matrix1$stratification %in% "Medium"), k], matrix1[which(matrix1$stratification %in% "Down"), k])
@@ -177,58 +165,49 @@ Analisi <- function(matrix1) {
   matrix1 <- rbind.fill(matrix1, dfTtest)
   remove(dfTtest)
   return(matrix1)
-  
 }
 
 #utilizzata per i raggruppamenti cg per isole e posizioni
-Analisi2 <- function(leng,index,position,column) {
-
-   mFinale <- data.frame(matrix())
+Analisi2 <- function(leng, index, position, column) {
   
-  for(k in 1:leng){
-      cg <-
-        as.vector(dfCGunique[which(dfCGunique$gene %in% geni[index] &
-                                     dfCGunique[, column] %in% position[k]), 1])
-      if (length(cg) != 0) {
-        cg <- paste(cg, geni[index], sep = "_")
-        m2 <- as.data.frame(m[, cg])
+  mFinale <- data.frame(matrix())
+  for (k in 1:leng) {
+    cg <- as.vector(dfCGunique[which(dfCGunique$gene %in% genes[index] & dfCGunique[, column] %in% position[k]), 1])
+    
+    if (length(cg) != 0) {
+      cg <- paste(cg, genes[index], sep = "_")
+      m2 <- as.data.frame(m[, cg])
+      m2 <- as.data.frame(m2[, colSums(is.na(m2)) != nrow(m2)]) #remove all coloumns that have all values NA
+      
+      if (dim(m2)[2] > 1) {
+        m2 <- stack(m2)
+        m2 <- as.matrix(m2[,-2])
+        num_row <- nrow(m2)
+        m2 <- cbind(m2, stratification)
+        colnames(m2) <- c("value", "stratification")
         
-        #eliminare colonne tutte NA
-        m2 <- as.data.frame(m2[, colSums(is.na(m2)) != nrow(m2)])
-        #if (dim(m2)[2] != 0) {
-          if (dim(m2)[2] > 1) {
-            m2 <- stack(m2)
-            m2 <- as.matrix(m2[, -2])
-          #}
-          num_row <- nrow(m2)
-          m2 <- cbind(m2, stratification)
-          colnames(m2) <- c("value", "stratification")
-          
-          m2 <- Analisi(m2)
-          m2 <- as.data.frame(m2[, -2])
-          
-          c <- as.data.frame(rep(dfPancan2[c(1:473), geni[i]], length(cg)))
-          
-          mTmp <- as.data.frame(m2[1:dim(c)[1],])
-
-          a <- corr.test(c, mTmp, adjust = "none")
-          m2 <-
-            rbind(m2, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
-          
-          m2 <-
-            data.frame(sapply(m2, c, unlist(valExprGene[, geni[index]])), row.names = NULL)
-          
-          m2 <- as.data.frame(m2[-c(1:num_row), ])
-          colnames(m2)<-paste(position[k], geni[index], sep = "_")
-          mFinale <- cbind(mFinale, m2)
-        }
+        m2 <- Analisi(m2)
+        m2 <- as.data.frame(m2[,-2])
+        
+        c <- as.data.frame(rep(dfPancan2[c(1:473), genes[i]], length(cg)))
+        mTmp <- as.data.frame(m2[1:dim(c)[1], ])
+        
+        a <- corr.test(c, mTmp, adjust = "none")
+        m2 <- rbind(m2, as.numeric(a$r), as.numeric(a$p)) #add pearson correlation and p-value
+        
+        m2 <- data.frame(sapply(m2, c, unlist(valExprGene[, genes[index]])), row.names = NULL)
+        
+        m2 <- as.data.frame(m2[-c(1:num_row),])
+        colnames(m2) <- paste(position[k], genes[index], sep = "_")
+        mFinale <- cbind(mFinale, m2)
       }
     }
-  
-   return(subset(mFinale, select = -c(1)))
+  }
+  return(subset(mFinale, select = -c(1)))
 }
 
 setRowNames <- function(df) {
+  
   row.names(df)[1] <- "medianDown"
   row.names(df)[2] <- "medianMedium"
   row.names(df)[3] <- "medianUP"
