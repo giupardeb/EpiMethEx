@@ -21,7 +21,7 @@
   
   * `PathDatasetMethylation`path assoluto del dataset **genomicMatrix** all'interno della cartella **TCGA_SKCM_hMethyl450-2015-02-24**
   
-3. Nella riga 30, cambiare il range, all'interno delle parentesi quadre, con quello desiderato. 
+3. Nell'istruzione `dfPancan <-fread(PathDatasetPancan,header = T,sep = "\t")[1:10, ]` cambiare il range, all'interno delle parentesi quadre, con quello desiderato. 
 
 **_MAX range di geni: 1000 con una congifurazione di PC: RAM: 32GB CORES: 8_**
 
@@ -47,7 +47,7 @@
   
   * `PathDatasetMethylation`path assoluto del dataset **genomicMatrix** all'interno della cartella **TCGA_SKCM_hMethyl450-2015-02-24**
   
-3. In row 30, within square brackets change the range genes
+3.  Inside the instruction `dfPancan <-fread(PathDatasetPancan,header = T,sep = "\t")[1:10, ]` within square brackets change the range genes
 
 **_MAX range of genes: 1000 with PC configuration: RAM: 32GB CORES: 8_**
 
