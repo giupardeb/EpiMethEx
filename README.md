@@ -15,11 +15,11 @@
   
   * `nameFD` cartella che conterrà i file excel di ogni range di esecuzione
   
-  * `PathDatasetPancan` path assoluto del dataset **genomicMatrix** all'interno della cartella **pancan_normalized**
+  * `PathDatasetPancan` path assoluto del dataset **genomicMatrix** all'interno della cartella **TCGA_SKCM_exp_HiSeqV2_PANCAN-2015-02-24**
   
-  * `PathDatasetProbe` path assoluto del dataset **GPL13534-11288.txt** all'interno della cartella **probe**
+  * `PathDatasetProbe` path assoluto del dataset **GPL13534-11288.txt**
   
-  * `PathDatasetMethylation`path assoluto del dataset **genomicMatrix** all'interno della cartella **Methylation450k**
+  * `PathDatasetMethylation`path assoluto del dataset **genomicMatrix** all'interno della cartella **TCGA_SKCM_hMethyl450-2015-02-24**
   
 3. Nella riga 30, cambiare il range, all'interno delle parentesi quadre, con quello desiderato. 
 
@@ -41,11 +41,11 @@
   
   * `nameFD` it's the directory name which will contain the excel file of every execution.
   
-  * `PathDatasetPancan` absolute path of dataset **genomicMatrix** within the directroy **pancan_normalized**
+  * `PathDatasetPancan` absolute path of dataset **genomicMatrix** within the directroy **TCGA_SKCM_exp_HiSeqV2_PANCAN-2015-02-24**
   
   * `PathDatasetProbe` absolute path of dataset **GPL13534-11288.txt** within the direcotry **probe**
   
-  * `PathDatasetMethylation`path assoluto del dataset **genomicMatrix** all'interno della cartella **Methylation450k**
+  * `PathDatasetMethylation`path assoluto del dataset **genomicMatrix** all'interno della cartella **TCGA_SKCM_hMethyl450-2015-02-24**
   
 3. In row 30, within square brackets change the range genes
 
