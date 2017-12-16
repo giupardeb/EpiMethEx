@@ -298,13 +298,12 @@ mFinaleCGglobali <- t(mFinaleCGglobali)
 
 write.xlsx(
   mFinaleCGglobali,
-  paste(nameFolderDest, nameFD, "CG_Globali.xlsx", sep = "/"),
+  paste(nameFolderDest, nameFD, "CG_data_individually.xlsx", sep = "/"),
   sheetName = "Sheet1"
 )
 remove(mFinaleCGglobali, a)
 gc()
 
-###CG unificati
 mFinaleCGunificati <-
   foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
     
@@ -355,7 +354,7 @@ mFinaleCGunificati <- t(mFinaleCGunificati)
 
 write.xlsx(
   mFinaleCGunificati,
-  paste(nameFolderDest, nameFD, "CG_unificati.xlsx", sep = "/"),
+  paste(nameFolderDest, nameFD, "CG_of_a_genes.xlsx", sep = "/"),
   sheetName = "Sheet1"
 )
 
@@ -380,7 +379,7 @@ mFinaleCGposition <- t(mFinaleCGposition)
 
 write.xlsx(
   mFinaleCGposition,
-  paste(nameFolderDest, nameFD, "CG_posizione_gene.xlsx", sep = "/") ,
+  paste(nameFolderDest, nameFD, "CG_by_position.xlsx", sep = "/") ,
   sheetName = "Sheet1"
 )
 
@@ -404,6 +403,6 @@ mFinaleCGisland <- t(mFinaleCGisland)
 
 write.xlsx(
   mFinaleCGisland,
-  paste(nameFolderDest, nameFD, "CG_isole_gene.xlsx", sep = "/") ,
+  paste(nameFolderDest, nameFD, "CG_by_islands.xlsx", sep = "/") ,
   sheetName = "Sheet1"
 )
