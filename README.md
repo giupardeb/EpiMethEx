@@ -16,11 +16,11 @@
   
   * `nameFD` it's the directory name which will contain the excel file of every execution.
   
-  * `PathDatasetPancan` absolute path of dataset **genomicMatrix** within the directroy **TCGA_SKCM_exp_HiSeqV2_PANCAN-2015-02-24**
+  * `PathDatasetPancan` absolute path of dataset **genomicMatrix** within the directory **TCGA_SKCM_exp_HiSeqV2_PANCAN-2015-02-24**
   
-  * `PathDatasetProbe` absolute path of dataset **GPL13534-11288.txt** within the direcotry **probe**
+  * `PathDatasetProbe` absolute path of dataset **GPL13534-11288.txt** within the directory **probe**
   
-  * `PathDatasetMethylation` absolute path of dataset **genomicMatrix** within the direcotry **TCGA_SKCM_hMethyl450-2015-02-24**
+  * `PathDatasetMethylation` absolute path of dataset **genomicMatrix** within the directory **TCGA_SKCM_hMethyl450-2015-02-24**
   
 3.  Inside the instruction `dfPancan <-fread(PathDatasetPancan,header = T,sep = "\t")[1:10, ]` within square brackets change the range genes
 
