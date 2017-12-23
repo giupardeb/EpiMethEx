@@ -10,21 +10,22 @@ library(psych)
 library(doParallel)
 library(foreach)
 
+
 dataIsLinearUser = F
 no_cores <- detectCores() / 2
 
 nameFolderDest <- "/home/giuseppe/dest"
 dir.create(file.path(nameFolderDest), showWarnings = FALSE)
-nameFD <- "1-1000"
+nameFD <- "1-10"
 dir.create(file.path(nameFolderDest, nameFD))
-
+range <- gsub("\\-", ":", nameFD)
 PathDatasetPancan <- "dataset/pancan_normalized/genomicMatrix"
 PathDatasetProbe <- "dataset/probe/GPL13534-11288.txt"
 PathDatasetMethylation <- "dataset/Methylation450k/genomicMatrix"
 
 source("Functions.R")
 
-dfPancan <-fread(PathDatasetPancan,header = T,sep = "\t")[1:1000, ]
+dfPancan <-fread(PathDatasetPancan,header = T,sep = "\t")[range, ]
 
 dfGpl <-fread(PathDatasetProbe,sep = "\t",header = F ,skip = 37,na.strings = c("", "NA"))[-1, c(1, 15, 16, 22, 23, 24, 25, 26)]
 
