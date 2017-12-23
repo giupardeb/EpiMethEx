@@ -42,7 +42,6 @@ dfPancan2 <- as.data.frame(t(dfPancan[, -1]))
 colnames(dfPancan2) <- dfPancan$sample
 
 #remove all genes that has all values equal a zero
-#rimuovo tutti quei genes che hanno valori uguali a zero
 dfPancan2 <- dfPancan2[, which(!apply(dfPancan2 == 0, 2, all))]
 
 indexTCGA <- data.frame(sapply(seq_along(dfPancan2), function(x) {
@@ -155,7 +154,6 @@ rm(s, s1, s2, dfGpl)
 gc()
 
 #remove genes and cg aren't into dfPancan2
-#rimuovo i genes e i cg che non sono all'interno di dfpancan2
 dfAnnotations <- subset(dfAnnotations, as.character(dfAnnotations$gene) %in% names(dfPancan2))
 
 dfMethylation <- subset(dfMethylation, as.character(dfMethylation$sample) %in% dfAnnotations$cg)
