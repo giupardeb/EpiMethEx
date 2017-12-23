@@ -163,11 +163,8 @@ maxOccurence <- max(as.data.frame(table(unlist(dfAnnotations$gene)))$Freq)
 
 #reorder genes related CG
 dfAnnotations <- dfAnnotations %>% arrange(gene, V16)
-
-#adesso creo un dataframe dei CG per ogni gene con l'ordine indicato da indexTCGA
-
-#dfCGunique conterrà la coppia (CG-posizione) univoca xk ci sono cg ripetuti in cui cambia la colonna V23
-
+                         
+#dfCGunique contain the unique couple (CG-posizione)
 dfCGunique <- dfAnnotations[!duplicated(dfAnnotations[, c(1, 6)]),]
 
 dfMethylation$sample <- as.factor(dfMethylation$sample)
@@ -184,6 +181,8 @@ tmp <- tapply(lapply(1:nrow(dfCGunique),
               })
 
 max.rows <- max(sapply(tmp, length))
+
+#DFCGorder is a dataframe that contains all CG values ordered by indextcga dataframe
 DFCGorder <-
   do.call(cbind, lapply(tmp, function(x) {
     length(x) <- max.rows
@@ -238,11 +237,10 @@ mFinaleCGglobali <-
     colnames(m) <- paste(names(m), genes[i], sep = "_")
     
     m1 <- m
-    #conservo gli indici delle colonne NA per poi reinserirli alla fine
+
     columnNA <- which(sapply(m1, function(x)
       all(is.na(x))))
     
-    #rimuovo colonne NA
     m1 <- m1[, colSums(is.na(m1)) != nrow(m1)]
     
     if (length(m1) != 0) {
@@ -275,7 +273,6 @@ mFinaleCGglobali <-
       m1 <- as.data.frame(m1[-c(1:464), ])
     }
     
-    #inserisco i valori del gene di riferimento
     m1 <- data.frame(sapply(m1, c, unlist(valExprGene[, genes[i]])), row.names = NULL)
     
     colnames(m1) <-
@@ -334,7 +331,6 @@ mFinaleCGunificati <-
       a <- corr.test(dfTmp, m4Tmp, adjust = "none")
       m4 <- rbind(m4, as.numeric(a$r), as.numeric(a$p)) #add correlation and p-value
       
-      #eliminare le righe dei valori dei cg
       m4 <- as.data.frame(m4[-c(1:num_row_m4),])
       m4 <- data.frame(sapply(m4, c, unlist(valExprGene[, genes[i]])), row.names = NULL)
       colnames(m4) <- paste("CG", genes[i], sep = "_")
