@@ -20,7 +20,7 @@
   
   * `PathDatasetProbe` absolute path of dataset **GPL13534-11288.txt** within the direcotry **probe**
   
-  * `PathDatasetMethylation`path assoluto del dataset **genomicMatrix** all'interno della cartella **TCGA_SKCM_hMethyl450-2015-02-24**
+  * `PathDatasetMethylation` absolute path of dataset **genomicMatrix** within the direcotry **TCGA_SKCM_hMethyl450-2015-02-24**
   
 3.  Inside the instruction `dfPancan <-fread(PathDatasetPancan,header = T,sep = "\t")[1:10, ]` within square brackets change the range genes
 
