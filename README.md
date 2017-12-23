@@ -1,6 +1,7 @@
 ## EpiMethEx (Epigenetic Methylation and Expression)
 
 ### HOW-TO execute the script
+#### (an example with melanoma cancer data, but can be used for any cancer  or disease)
 
 1. Download the following dataset:
 
