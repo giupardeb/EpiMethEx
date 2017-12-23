@@ -24,7 +24,7 @@ PathDatasetMethylation <- "dataset/Methylation450k/genomicMatrix"
 
 source("Functions.R")
 
-dfPancan <-fread(PathDatasetPancan,header = T,sep = "\t")[1:10, ]
+dfPancan <-fread(PathDatasetPancan,header = T,sep = "\t")[1:1000, ]
 
 dfGpl <-fread(PathDatasetProbe,sep = "\t",header = F ,skip = 37,na.strings = c("", "NA"))[-1, c(1, 15, 16, 22, 23, 24, 25, 26)]
 
