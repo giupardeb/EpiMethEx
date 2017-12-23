@@ -99,6 +99,7 @@ setFC <- function(meanFirstGroup, meanSecondGroup) {
   return(fold)
 }
 
+#Used in genes analysis
 ttester <- function(array1, array2) {
   
   if (sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T) != 0) {
@@ -165,6 +166,7 @@ Analisi <- function(matrix1) {
   return(matrix1)
 }
 
+#Used for islands and positions cg groupings
 Analisi2 <- function(leng, index, position, column) {
   
   mFinale <- data.frame(matrix())
