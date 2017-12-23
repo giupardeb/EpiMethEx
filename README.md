@@ -14,7 +14,7 @@
 
   * `nameFolderDest` it's the absolute directory path where will be created within the `nameFD` of every execution.
   
-  * `nameFD` it's the directory name which will contain the excel file of every execution.
+  * `nameFD` it's the directory name which will contain the excel file of every range execution.
   
   * `PathDatasetPancan` absolute path of dataset **genomicMatrix** within the directory **TCGA_SKCM_exp_HiSeqV2_PANCAN-2015-02-24**
   
