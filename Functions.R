@@ -81,21 +81,10 @@ calculateLinearFC <- function(meanFirstGroup, meanSecondGroup) {
   return(fold)
 }
 
-#[START] This function is Used in genes analysis, and it allow us to calculate the t-student test
-ttester <- function(array1, array2) {
-  
-  if (sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T) != 0) {
-    A <- t.test(array1, array2,
-                var.equal = F)[c('statistic', 'p.value')]
-    return(c(A$statistic, A$p.value))
-  } else{
-    return(c(NA, NA))
-  }
-}
-
-#[END]
-
-Analisi <- function(matrix1) {
+# [START]
+# Qesta funzione viene utilizzata nell'analisi dei CG globali, calcola la mediana, la beta difference 
+# e il Kolmogorov-Smirnovper per le varie stratificazioni.
+Analysis <- function(matrix1) {
   
   medianUP <- apply(as.data.frame(matrix1[which(matrix1$stratification %in% "UP"),-ncol(matrix1)]), 2, median, na.rm = T)
   medianMID <- apply(as.data.frame(matrix1[which(matrix1$stratification %in% "Medium"),-ncol(matrix1)]), 2, median, na.rm = T)
@@ -121,81 +110,99 @@ Analisi <- function(matrix1) {
   for (k in 1:dimM) {
     #UPvsMID
     dfTtest[1, k] <-
-      t_tester(matrix1[which(matrix1$stratification %in% "UP"), k], matrix1[which(matrix1$stratification %in% "Medium"), k])
+      calculateTtest(matrix1[which(matrix1$stratification %in% "UP"), k], matrix1[which(matrix1$stratification %in% "Medium"), k], F)
     #UPvsDOWN
     dfTtest[2, k] <-
-      t_tester(matrix1[which(matrix1$stratification %in% "UP"), k], matrix1[which(matrix1$stratification %in% "Down"), k])
+      calculateTtest(matrix1[which(matrix1$stratification %in% "UP"), k], matrix1[which(matrix1$stratification %in% "Down"), k], F)
     #MIDvsDOWN
     dfTtest[3, k] <-
-      t_tester(matrix1[which(matrix1$stratification %in% "Medium"), k], matrix1[which(matrix1$stratification %in% "Down"), k])
+      calculateTtest(matrix1[which(matrix1$stratification %in% "Medium"), k], matrix1[which(matrix1$stratification %in% "Down"), k], F)
   }
   
   matrix1 <- rbind.fill(matrix1, dfTtest)
   remove(dfTtest)
   return(matrix1)
 }
+# [END]
 
 #Used for islands and positions cg groupings
-Analisi2 <- function(leng, index, position, column) {
+AnalysisIslands_PositionsCG <- function(leng, index, position, column) {
   
   mFinale <- data.frame(matrix())
+  
   for (k in 1:leng) {
     cg <- as.vector(dfCGunique[which(dfCGunique$gene %in% genes[index] & dfCGunique[, column] %in% position[k]), 1])
     
     if (length(cg) != 0) {
       cg <- paste(cg, genes[index], sep = "_")
-      m2 <- as.data.frame(m[, cg])
-      m2 <- as.data.frame(m2[, colSums(is.na(m2)) != nrow(m2)]) #remove all coloumns that have all values NA
+      tempMatrix2 <- as.data.frame(tempMatrix[, cg])
+      tempMatrix2 <- as.data.frame(tempMatrix2[, colSums(is.na(tempMatrix2)) != nrow(tempMatrix2)]) #remove all coloumns that have all values NA
       
-      if (dim(m2)[2] > 1) {
-        m2 <- stack(m2)
-        m2 <- as.matrix(m2[,-2])
-        num_row <- nrow(m2)
-        m2 <- cbind(m2, stratification)
-        colnames(m2) <- c("value", "stratification")
+      if (dim(tempMatrix2)[2] > 1) {
+        tempMatrix2 <- stack(tempMatrix2)
+        tempMatrix2 <- as.matrix(tempMatrix2[,-2])
+        num_row <- nrow(tempMatrix2)
+        tempMatrix2 <- cbind(tempMatrix2, stratification)
+        colnames(tempMatrix2) <- c("value", "stratification")
         
-        m2 <- Analisi(m2)
-        m2 <- as.data.frame(m2[,-2])
+        tempMatrix2 <- Analysis(tempMatrix2)
+        tempMatrix2 <- as.data.frame(tempMatrix2[,-2])
         
-        c <- as.data.frame(rep(dfPancan2[c(1:473), genes[i]], length(cg)))
-        mTmp <- as.data.frame(m2[1:dim(c)[1], ])
+        #[START] calcolo la correlazione tra i dati di espressione dell'i-esimo gene con i dati di metilazione dei cg associati
+        mTmp <- as.data.frame(rep(dfPancan2[c(1:473), genes[i]], length(cg)))
+        mTmp1 <- as.data.frame(tempMatrix2[1:dim(mTmp)[1], ])
+        resultCorrTest <- corr.test(mTmp, mTmp1, adjust = "none")
+        tempMatrix2 <- rbind(tempMatrix2, as.numeric(resultCorrTest$r), as.numeric(resultCorrTest$p)) #add pearson correlation and p-value
+        #[END]
         
-        a <- corr.test(c, mTmp, adjust = "none")
-        m2 <- rbind(m2, as.numeric(a$r), as.numeric(a$p)) #add pearson correlation and p-value
+        tempMatrix2 <- data.frame(sapply(tempMatrix2, mTmp, unlist(valExprGene[, genes[index]])), row.names = NULL)
         
-        m2 <- data.frame(sapply(m2, c, unlist(valExprGene[, genes[index]])), row.names = NULL)
-        
-        m2 <- as.data.frame(m2[-c(1:num_row),])
-        colnames(m2) <- paste(position[k], genes[index], sep = "_")
-        mFinale <- cbind(mFinale, m2)
+        tempMatrix2 <- as.data.frame(tempMatrix2[-c(1:num_row),])
+        colnames(tempMatrix2) <- paste(position[k], genes[index], sep = "_")
+        mFinale <- cbind(mFinale, tempMatrix2)
       }
     }
   }
   return(subset(mFinale, select = -c(1)))
 }
 
-t_tester <- function(array1, array2) {
+#[START] This function is Used to calculate the t-student test in genes analysis when flag = F, and calculate Kolmogorov-Smirnov Tests otherwhise
+calculateTtest <- function(array1, array2, flag){
   
-  difference <- sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T)
+  difference <- sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T)  
   
-  if (difference != 0 || is.na(difference)) {
-    tryCatch({
-      A <- ks.test(array1, array2)[c('p.value')]
-    }, error = function(error_condition) {
-      A <- list(p.value = NA)
-    })
-    
-    return(c(A$p.value))
+  if(flag){
+    #calculate t_test for analysis genes
+    if (difference != 0) {
+      A <- t.test(array1, array2, var.equal = F)[c('statistic', 'p.value')]
+      return(c(A$statistic, A$p.value))
+    } else{
+      return(c(NA, NA))
+    }
+  }
+  else{
+    #calculate Kolmogorov-Smirnov for cg analysis
+    if (difference != 0 || is.na(difference)) {
+      tryCatch({
+        A <- ks.test(array1, array2)[c('p.value')]
+      }, error = function(error_condition) {
+        A <- list(p.value = NA)
+      })
+      return(c(A$p.value))
+    }
   }
 }
+#[END]
+
+
 
 setRowNames <- function(df) {
   
-  rowNames <- c("medianDown","medianMedium","medianUP","bd_UPvsMID",
-                "bd_UPvsDOWN","bd_MIDvsDOWN","pvalue_UPvsMID","pvalue_UPvsDOWN",
+  rowNames <- c("medianDown","medianMedium","medianUP","bd_UPvsMID", "bd_UPvsDOWN","bd_MIDvsDOWN","pvalue_UPvsMID","pvalue_UPvsDOWN",
                 "pvalue_MIDvsDOWN","pearson_correlation","pvalue_pearson_correlation",
                 "fc_UPvsMID(gene)","fc_UPvsDOWN(gene)", "fc_MIDvsDOWN(gene)","pvalue_UPvsMID(gene)",
                 "pvalue_UPvsDOWN(gene)","pvalue_MIDvsDOWN(gene)")
+  
   for(i in 1:17){
     row.names(df)[i] <- rowNames[i]
   }
