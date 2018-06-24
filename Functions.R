@@ -1,3 +1,4 @@
+#[START] this function is used to calculate the Beta Difference
 calcBetaDifference <- function(matrix3) {
   
   medianUP <- matrix3[nrow(matrix3), -ncol(matrix3)]
@@ -21,8 +22,9 @@ calcBetaDifference <- function(matrix3) {
   
   return(matrix3)
 }
+#[END]
 
-calcFC <- function(matrix2, dataIsLinear) {
+calcFC <- function(matrix2, flag) {
   
   df <- data.frame()
   
@@ -30,14 +32,15 @@ calcFC <- function(matrix2, dataIsLinear) {
   meanMid <- matrix2[nrow(matrix2) - 1, -ncol(matrix2)]
   meanDown <- matrix2[nrow(matrix2) - 2, -ncol(matrix2)]
   
-  if (dataIsLinear) {
-    fc_UPvsMID <- setFC(meanUp, meanMid)
-    fc_UPvsDOWN <-  setFC(meanUp, meanDown)
-    fc_MIDvsDOWN <- setFC(meanMid, meanDown)
+  #flag = True, data are linear, else data are logarithmic 
+  if (flag) {
+    fc_UPvsMID <- calculateLinearFC(meanUp, meanMid)
+    fc_UPvsDOWN <-  calculateLinearFC(meanUp, meanDown)
+    fc_MIDvsDOWN <- calculateLinearFC(meanMid, meanDown)
   } else{
-    fc_UPvsMID <- setFClog(meanUp, meanMid)
-    fc_UPvsDOWN <- setFClog(meanUp, meanDown)
-    fc_MIDvsDOWN <-  setFClog(meanMid, meanDown)
+    fc_UPvsMID <- calculateLogFC(meanUp, meanMid)
+    fc_UPvsDOWN <- calculateLogFC(meanUp, meanDown)
+    fc_MIDvsDOWN <-  calculateLogFC(meanMid, meanDown)
   }
   
   df <- rbind(df, fc_UPvsMID, fc_UPvsDOWN, fc_MIDvsDOWN)
@@ -49,29 +52,21 @@ calcFC <- function(matrix2, dataIsLinear) {
   return(matrix2)
 }
 
-
 checkSign <- function(a, b) {
   
   return (sign(a) == sign(b))
 }
 
-setFClog <- function(meanFirstGroup, meanSecondGroup) {
+calculateLogFC <- function(meanFirstGroup, meanSecondGroup) {
   
   fold <- 2 ^ (abs(meanFirstGroup - meanSecondGroup))
   
-  fc <- lapply(seq_along(fold), function(i) {
-    if (meanSecondGroup[[i]] < meanFirstGroup[[i]]) {
-      fold[[i]]
-    }
-    else{
-      -fold[[i]]
-    }
-  })
+  fc <- ifelse(meanSecondGroup < meanFirstGroup, fold, -fold)
   
   return(fc)
 }
 
-setFC <- function(meanFirstGroup, meanSecondGroup) {
+calculateLinearFC <- function(meanFirstGroup, meanSecondGroup) {
   
   maxabs <- mapply(max, abs(meanFirstGroup), abs(meanSecondGroup))
   minabs <- mapply(min, abs(meanFirstGroup), abs(meanSecondGroup))
@@ -79,27 +74,14 @@ setFC <- function(meanFirstGroup, meanSecondGroup) {
   min <- mapply(min, meanFirstGroup, meanSecondGroup)
   Y <- checkSign(meanFirstGroup, meanSecondGroup)
   
-  fc <- lapply(seq_along(Y), function(i) {
-    if (Y[[i]] == T) {
-      maxabs[[i]] / minabs[[i]]
-    } else{
-      max[[i]] - min[[i]]
-    }
-  })
-  
-  fold <- lapply(seq_along(fc), function(i) {
-    if (meanSecondGroup[[i]] < meanFirstGroup[[i]]) {
-      fc[[i]]
-    }
-    else{
-      -fc[[i]]
-    }
-  })
-  
+  fc <- ifelse(Y==T, maxabs/minabs, max-min)
+
+  fold <- ifelse(meanSecondGroup < meanFirstGroup, fc, -fc)
+
   return(fold)
 }
 
-#Used in genes analysis
+#[START] This function is Used in genes analysis, and it allow us to calculate the t-student test
 ttester <- function(array1, array2) {
   
   if (sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T) != 0) {
@@ -111,20 +93,7 @@ ttester <- function(array1, array2) {
   }
 }
 
-t_tester <- function(array1, array2) {
-  
-  difference <- sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T)
-  
-  if (difference != 0 || is.na(difference)) {
-    tryCatch({
-      A <- ks.test(array1, array2)[c('p.value')]
-    }, error = function(error_condition) {
-      A <- list(p.value = NA)
-    })
-    
-    return(c(A$p.value))
-  }
-}
+#[END]
 
 Analisi <- function(matrix1) {
   
@@ -205,24 +174,31 @@ Analisi2 <- function(leng, index, position, column) {
   return(subset(mFinale, select = -c(1)))
 }
 
+t_tester <- function(array1, array2) {
+  
+  difference <- sd(mapply('-', array1, array2, SIMPLIFY = T), na.rm = T)
+  
+  if (difference != 0 || is.na(difference)) {
+    tryCatch({
+      A <- ks.test(array1, array2)[c('p.value')]
+    }, error = function(error_condition) {
+      A <- list(p.value = NA)
+    })
+    
+    return(c(A$p.value))
+  }
+}
+
 setRowNames <- function(df) {
   
-  row.names(df)[1] <- "medianDown"
-  row.names(df)[2] <- "medianMedium"
-  row.names(df)[3] <- "medianUP"
-  row.names(df)[4] <- "bd_UPvsMID"
-  row.names(df)[5] <- "bd_UPvsDOWN"
-  row.names(df)[6] <- "bd_MIDvsDOWN"
-  row.names(df)[7] <- "pvalue_UPvsMID"
-  row.names(df)[8] <- "pvalue_UPvsDOWN"
-  row.names(df)[9] <- "pvalue_MIDvsDOWN"
-  row.names(df)[10] <- "pearson_correlation"
-  row.names(df)[11] <- "pvalue_pearson_correlation"
-  row.names(df)[12] <- "fc_UPvsMID(gene)"
-  row.names(df)[13] <- "fc_UPvsDOWN(gene)"
-  row.names(df)[14] <- "fc_MIDvsDOWN(gene)"
-  row.names(df)[15] <- "pvalue_UPvsMID(gene)"
-  row.names(df)[16] <- "pvalue_UPvsDOWN(gene)"
-  row.names(df)[17] <- "pvalue_MIDvsDOWN(gene)"
+  rowNames <- c("medianDown","medianMedium","medianUP","bd_UPvsMID",
+                "bd_UPvsDOWN","bd_MIDvsDOWN","pvalue_UPvsMID","pvalue_UPvsDOWN",
+                "pvalue_MIDvsDOWN","pearson_correlation","pvalue_pearson_correlation",
+                "fc_UPvsMID(gene)","fc_UPvsDOWN(gene)", "fc_MIDvsDOWN(gene)","pvalue_UPvsMID(gene)",
+                "pvalue_UPvsDOWN(gene)","pvalue_MIDvsDOWN(gene)")
+  for(i in 1:17){
+    row.names(df)[i] <- rowNames[i]
+  }
+  
   return(df)
 }
