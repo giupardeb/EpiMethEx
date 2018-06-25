@@ -18,8 +18,18 @@ source("Functions.R")
 source("DownloadDataset.R")
 # [END]
 
-dataIsLinearUser = F
-no_cores <- detectCores() / 2
+options(echo=TRUE) # To see commands in output file
+args <- commandArgs(trailingOnly = TRUE)
+print(args)
+
+#[START] input parameters
+idMethylation <- args[1]
+idPancan <- args[2]
+minRangeGene <- args[3]
+maxRangeGene <- args[4]
+numCores <- as.numeric(args[5])
+dataLinear <- as.logical(toupper(args[6]))
+#[END]
 
 #[START] static values, that identify the rows of DfPancan2
 ROW_MEAN_DOWN <- 475
@@ -37,12 +47,10 @@ ROW_TTEST_UPvsDOWN <- 486
 ROW_PVALUE_UPvsDOWN <- 487
 ROW_TTEST_MIDvsDOWN <- 488
 ROW_PVALUE_MIDvsDOWN <- 489
+#[END]
 
-
-#nameFolderDest <- "/home/giuseppe/dest"
-#dir.create(file.path(nameFolderDest), showWarnings = FALSE)
-
-nameFD <- "1-10" #dire al prof se possibile mettere questo come output
+nameFolderDest <- file.path(getwd(),"outputs")
+nameFD <- paste(minRangeGene,maxRangeGene,sep = "-")
 dir.create(file.path(nameFolderDest, nameFD))
 
 # [START]: 
@@ -50,7 +58,7 @@ dir.create(file.path(nameFolderDest, nameFD))
 # params[2] = Pancan Dataset
 # params[3] = Methylation Dataset
 # params[4] = Tumore Name
-params <- datasetDownload("TCGA.SKCM.sampleMap/HumanMethylation450","TCGA.SKCM.sampleMap/HiSeqV2_PANCAN")
+params <- datasetDownload(idMethylation,idPancan)
 # [END]
 
 #paths of the datasets
@@ -58,8 +66,7 @@ PathDatasetPancan <- file.path(getwd(),"datasets",params[4],params[2])
 PathDatasetMethylation <- file.path(getwd(),"datasets",params[4],params[3])
 PathDatasetProbe <- file.path(getwd(),"datasets",params[4],params[1])
 
-
-dfPancan <- read.table(gzfile(PathDatasetPancan),header = T)[200:220, ]
+dfPancan <- read.table(gzfile(PathDatasetPancan),header = T)[as.numeric(minRangeGene):as.numeric(maxRangeGene), ]
 
 #the first 37 rows of probset dataset, are comment. the following istruction read only columns of interest
 dfGpl <-fread(PathDatasetProbe,sep = "\t",header = F ,skip = 37,na.strings = c("", "NA"))[-1, c(1, 15, 16, 22, 23, 24, 25, 26)]
@@ -115,12 +122,12 @@ remove(quantili)
 gc()
 
 #Calculate Fold change of the combinations (up vs mid, up vs down, etc..)
-dfPancan2 <- calcFC(dfPancan2, dataIsLinearUser)
+dfPancan2 <- calcFC(dfPancan2, dataLinear)
 
 dimDFpancan <- dim(dfPancan2[, -ncol(dfPancan2)])[2]
 
 # Create cluster with desired number of cores
-cl <- makeCluster(no_cores)
+cl <- makeCluster(numCores)
 
 # Register cluster
 registerDoParallel(cl)
@@ -243,7 +250,7 @@ lengthPositions <- length(positions)
 lengthIslands <- length(islands)
 
 # Create cluster with desired number of cores
-cl <- makeCluster(no_cores)
+cl <- makeCluster(numCores)
 
 # Register cluster
 registerDoParallel(cl)
@@ -349,7 +356,8 @@ mFinaleCGglobali <- t(mFinaleCGglobali)
 
 write.xlsx(
   mFinaleCGglobali,
-  paste(nameFolderDest, nameFD, "CG_data_individually.xlsx", sep = "/"),
+  file.path(nameFolderDest,nameFD,"CG_data_individually.xlsx"),
+  #paste(nameFolderDest, nameFD, "CG_data_individually.xlsx", sep = "/"),
   sheetName = "Sheet1"
 )
 remove(mFinaleCGglobali, tmp)
@@ -412,6 +420,7 @@ mFinaleCGunificati <- t(mFinaleCGunificati)
 
 write.xlsx(
   mFinaleCGunificati,
+  file.path(nameFolderDest,nameFD,"CG_of_a_genes.xlsx"),
   paste(nameFolderDest, nameFD, "CG_of_a_genes.xlsx", sep = "/"),
   sheetName = "Sheet1"
 )
@@ -442,7 +451,8 @@ mFinaleCGposition <- t(mFinaleCGposition)
 
 write.xlsx(
   mFinaleCGposition,
-  paste(nameFolderDest, nameFD, "CG_by_position.xlsx", sep = "/") ,
+  file.path(nameFolderDest,nameFD,"CG_by_position.xlsx"),
+  #paste(nameFolderDest, nameFD, "CG_by_position.xlsx", sep = "/") ,
   sheetName = "Sheet1"
 )
 
@@ -472,6 +482,7 @@ mFinaleCGisland <- t(mFinaleCGisland)
 
 write.xlsx(
   mFinaleCGisland,
-  paste(nameFolderDest, nameFD, "CG_by_islands.xlsx", sep = "/") ,
+  file.path(nameFolderDest,nameFD,"CG_by_islands.xlsx"),
+  #paste(nameFolderDest, nameFD, "CG_by_islands.xlsx", sep = "/") ,
   sheetName = "Sheet1"
 )

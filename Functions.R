@@ -24,6 +24,7 @@ calcBetaDifference <- function(matrix3) {
 }
 #[END]
 
+#[START] this function is used to calculate the Fold Change
 calcFC <- function(matrix2, flag) {
   
   df <- data.frame()
@@ -51,12 +52,14 @@ calcFC <- function(matrix2, flag) {
   
   return(matrix2)
 }
+#[END]
 
 checkSign <- function(a, b) {
   
   return (sign(a) == sign(b))
 }
 
+#[START] this function is used to calculate the Fold Change when data are logarithmic
 calculateLogFC <- function(meanFirstGroup, meanSecondGroup) {
   
   fold <- 2 ^ (abs(meanFirstGroup - meanSecondGroup))
@@ -65,7 +68,9 @@ calculateLogFC <- function(meanFirstGroup, meanSecondGroup) {
   
   return(fc)
 }
+#[END]
 
+#[START] this function is used to calculate the Fold Change when data are linear
 calculateLinearFC <- function(meanFirstGroup, meanSecondGroup) {
   
   maxabs <- mapply(max, abs(meanFirstGroup), abs(meanSecondGroup))
@@ -80,6 +85,7 @@ calculateLinearFC <- function(meanFirstGroup, meanSecondGroup) {
 
   return(fold)
 }
+#[END]
 
 # [START]
 # Qesta funzione viene utilizzata nell'analisi dei CG globali, calcola la mediana, la beta difference 
@@ -193,8 +199,6 @@ calculateTtest <- function(array1, array2, flag){
   }
 }
 #[END]
-
-
 
 setRowNames <- function(df) {
   
