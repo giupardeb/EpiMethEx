@@ -8,7 +8,7 @@ Functions
 }
 \usage{
 epimethex.analysis(path_dfPancan, path_dfGpl, path_dfMethylation, minRangeGene,
-  maxRangeGene, numCores, dataLinear, outputPath)
+    maxRangeGene, numCores, dataLinear, outputPath)
 }
 \arguments{
 \item{path_dfPancan}{String, is the path of expression data}
@@ -26,6 +26,9 @@ epimethex.analysis(path_dfPancan, path_dfGpl, path_dfMethylation, minRangeGene,
 \item{dataLinear}{Logic.}
 
 \item{outputPath}{String}
+}
+\value{
+files excel
 }
 \description{
 Create a Epimethex function

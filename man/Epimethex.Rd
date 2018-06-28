@@ -6,7 +6,8 @@
 \alias{Epimethex-package}
 \title{Epimethex Package}
 \description{
-a tool for large-scale integrated analysis in methylation hotspots linked to genetic regulation
+a tool for large-scale integrated analysis in methylation hotspots
+linked to genetic regulation
 }
 \author{
 Giuseppe
