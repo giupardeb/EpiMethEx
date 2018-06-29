@@ -1,32 +1,32 @@
-#Download Files Tumor
+#Download tumor files
 
 datasetDownload <- function(idMethylation, idPancan){
   
-  #create a output folder to files excel
+  #create output folder for excel files
   dir.create(file.path(getwd(), "outputs"), showWarnings = FALSE)
   
-  #create folder of datasets
+  #create folder for datasets
   dir.create(file.path(getwd(), "datasets"), showWarnings = FALSE)
   
-  #access into datasets folder
+  #access  datasets folder
   setwd(file.path(getwd(), "datasets"))
   
-  #get name tumor from idMethylation parametr
+  #get tumor name from idMethylation parameter
   tumorName <- unlist(strsplit(idMethylation, ".", fixed = T))[2]
   
   #create a folder with the name of the tumor
   dir.create(file.path(getwd(), tumorName), showWarnings = FALSE)
   
-  #access into "tumorName" folder
+  #access "tumorName" folder
   setwd(file.path(getwd(), tumorName))
   
   nameFileMethylation <- unlist(strsplit(idMethylation, '/', fixed = T))[2]
   nameFilePancan <- unlist(strsplit(idPancan, '/', fixed = T))[2]
   
-  #check if not exists gz files mehtylation and not exist methylation file
+  #check the non existence of gz files mehtylation and  methylation file
   checkExistFile(nameFileMethylation, idMethylation)
   
-  #check if not exists gz files mehtylation and not exist methylation file
+  #check the non existence of gz files mehtylation and methylation file
   checkExistFile(nameFilePancan, idPancan)
   
   #the variable "params" will contain the following files:

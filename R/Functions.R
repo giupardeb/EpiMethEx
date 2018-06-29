@@ -1,4 +1,4 @@
-#[START] this function is used to calculate the Beta Difference
+#[START] this function calculates the Beta Difference
 calcBetaDifference <- function(matrix3) {
     medianUP <- matrix3[nrow(matrix3),-ncol(matrix3)]
     medianMID <- matrix3[nrow(matrix3) - 1,-ncol(matrix3)]
@@ -22,7 +22,7 @@ calcBetaDifference <- function(matrix3) {
 }
 #[END]
 
-#[START] this function is used to calculate the Fold Change
+#[START] this function calculates the Fold Change
 calcFC <- function(matrix2, flag) {
     df <- data.frame()
 
@@ -63,7 +63,7 @@ calculateLogFC <- function(meanFirstGroup, meanSecondGroup) {
 }
 #[END]
 
-#[START] this function is used to calculate the Fold Change when data are linear
+#[START] this function calculates the Fold Change when data are representd in linear way
 calculateLinearFC <- function(meanFirstGroup, meanSecondGroup) {
     maxabs <- mapply(max, abs(meanFirstGroup), abs(meanSecondGroup))
     minabs <- mapply(min, abs(meanFirstGroup), abs(meanSecondGroup))
@@ -79,9 +79,8 @@ calculateLinearFC <- function(meanFirstGroup, meanSecondGroup) {
 #[END]
 
 # [START]
-# Qesta funzione viene utilizzata nell'analisi dei CG globali, calcola
-# la mediana, la beta difference e il Kolmogorov-Smirnovper
-# per le varie stratificazioni.
+# This function analyzes global CG, computes the median, beta-difference and
+# Kolmogorov-Smirnov test for the stratifications
 Analysis <- function(matrix1) {
     medianUP <- apply(as.data.frame(
         matrix1[which(matrix1$stratification %in% "UP"), -ncol(matrix1)]), 2,
@@ -132,7 +131,7 @@ Analysis <- function(matrix1) {
 }
 # [END]
 
-#Used for islands and positions cg groupings
+#Used for islands and positions cg grouping
 AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
     genes,tempMatrix,stratification,dfPancan2,valExprGene) {
 
@@ -159,8 +158,8 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
                 tempMatrix2 <- Analysis(tempMatrix2)
                 tempMatrix2 <- as.data.frame(tempMatrix2[, -2])
 
-                # [START] calcolo la correlazione tra i dati di espressione
-                # dell'i-esimo gene con i dati di metilazione dei cg associati
+                # [START] computes the correlation among gene[i] expression data
+                # and methylation data with associated CG
 
                 mTmp <- as.data.frame(rep(dfPancan2[c(1:473), genes[index]],
                     length(cg)))
@@ -186,7 +185,7 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
     return(subset(mFinale, select = -c(1)))
 }
 
-# [START] This function is Used to calculate the t-student test in genes
+# [START] This function computes the t-student test in genes
 # analysis when flag = F, and calculate Kolmogorov-Smirnov Tests otherwhise
 calculateTtest <- function(array1, array2, flag) {
     difference <- sd(mapply('-', array1, array2, SIMPLIFY = TRUE), na.rm = TRUE)
