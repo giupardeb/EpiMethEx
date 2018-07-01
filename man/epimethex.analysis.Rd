@@ -7,15 +7,15 @@
 Functions
 }
 \usage{
-epimethex.analysis(path_dfPancan, path_dfGpl, path_dfMethylation, minRangeGene,
-    maxRangeGene, numCores, dataLinear, outputPath)
+epimethex.analysis(dfPancan, dfGpl, dfMethylation, minRangeGene, maxRangeGene,
+    numCores, dataLinear)
 }
 \arguments{
-\item{path_dfPancan}{String, is the path of expression data}
+\item{dfPancan}{data.frame, expression data}
 
-\item{path_dfGpl}{String, is the path of Annotations data}
+\item{dfGpl}{data.frame, Annotations data}
 
-\item{path_dfMethylation}{String, is the path of Methylation data}
+\item{dfMethylation}{data.frame, Methylation data}
 
 \item{minRangeGene}{Numeric}
 
@@ -24,12 +24,46 @@ epimethex.analysis(path_dfPancan, path_dfGpl, path_dfMethylation, minRangeGene,
 \item{numCores}{Numeric, is the number of cores that you can use}
 
 \item{dataLinear}{Logic.}
-
-\item{outputPath}{String}
 }
 \value{
 files excel
 }
 \description{
 Create a Epimethex function
+}
+\examples{
+
+Annotations <- data.frame(
+    ID = c("cg1","cg2", "cg3"),
+    Relation_to_UCSC_CpG_Island = c("N_Shore","S_Shelf","N_Shore"),
+    UCSC_CpG_Islands_Name = c("chrY:11-22","chrY:22-33","chrY:55-66"),
+    UCSC_RefGene_Accession = c("NM_00116441;NR_00155","NM_00468","NR_00292"),
+    Chromosome_36 = c("Y","Y","Y"),
+    Coordinate_36 = c("9973356","21151183","20123684"),
+    UCSC_RefGene_Name = c("ARHGEF10L;HIF3A","HIF3A","RNF17"),
+    UCSC_RefGene_Group = c("Body;TSS1500","Body","Body"),
+    stringsAsFactors=FALSE)
+
+Expressions <- data.frame(
+    sample = c("ARHGEF10L", "HIF3A", "RNF17"),
+    TCGA1 = c(-0.746592469762, -0.753826336325, -0.531035005853),
+    TCGA2 = c(-0.363492469762, -2.67922633632, -0.531035005853),
+    TCGA3 = c(-2.97279246976, 0.679073663675, -4.06262633632),
+    TCGA4 = c(-0.613189285993,-0.545547600468, 0.59499523215),
+    TCGA5 = c(-0.602787155677, -1.56558715568, 3.11398609442),
+    TCGA6 = c(0.323339547405, 0.268878821693, -1.62560252829),
+stringsAsFactors=FALSE)
+
+Methylation <- data.frame(
+    sample = c("cg1", "cg2", "cg3"),
+    TCGA1 = c(0.1290, 0.2394, 0.0913),
+    TCGA2 = c(0.9214, 0.0193, 0.0281),
+    TCGA3 = c(0.5925, 0.8948, 0.0720),
+    TCGA4 = c(0.9643, 0.7934, 0.0354),
+    TCGA5 = c(0.1298, 0.0243, 0.8296),
+    TCGA6 = c(0.8508, 0.8952, 0.9893),
+stringsAsFactors=FALSE)
+
+epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2, FALSE)
+
 }

@@ -63,7 +63,8 @@ calculateLogFC <- function(meanFirstGroup, meanSecondGroup) {
 }
 #[END]
 
-#[START] this function calculates the Fold Change when data are representd in linear way
+# [START] this function calculates the Fold Change
+# when data are representd in linear way
 calculateLinearFC <- function(meanFirstGroup, meanSecondGroup) {
     maxabs <- mapply(max, abs(meanFirstGroup), abs(meanSecondGroup))
     minabs <- mapply(min, abs(meanFirstGroup), abs(meanSecondGroup))
@@ -81,7 +82,7 @@ calculateLinearFC <- function(meanFirstGroup, meanSecondGroup) {
 # [START]
 # This function analyzes global CG, computes the median, beta-difference and
 # Kolmogorov-Smirnov test for the stratifications
-Analysis <- function(matrix1) {
+Analysis <- function(matrix1,dataLinear) {
     medianUP <- apply(as.data.frame(
         matrix1[which(matrix1$stratification %in% "UP"), -ncol(matrix1)]), 2,
         median, na.rm = TRUE)
@@ -114,15 +115,15 @@ Analysis <- function(matrix1) {
     for (k in 1:dimM) {
         dfTtest[1, k] <- calculateTtest(matrix1[
             which(matrix1$stratification %in% "UP"), k],
-            matrix1[which(matrix1$stratification %in% "Medium"), k], FALSE)
+            matrix1[which(matrix1$stratification %in% "Medium"), k], dataLinear)
 
         dfTtest[2, k] <-calculateTtest(matrix1[
             which(matrix1$stratification %in% "UP"), k],
-            matrix1[which(matrix1$stratification %in% "Down"), k], FALSE)
+            matrix1[which(matrix1$stratification %in% "Down"), k], dataLinear)
 
         dfTtest[3, k] <- calculateTtest(matrix1[
             which(matrix1$stratification %in% "Medium"), k],
-            matrix1[which(matrix1$stratification %in% "Down"), k], FALSE)
+            matrix1[which(matrix1$stratification %in% "Down"), k], dataLinear)
     }
 
     matrix1 <- plyr::rbind.fill(matrix1, dfTtest)
@@ -133,7 +134,8 @@ Analysis <- function(matrix1) {
 
 #Used for islands and positions cg grouping
 AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
-    genes,tempMatrix,stratification,dfPancan2,valExprGene) {
+    genes,tempMatrix,stratification,dfPancan2,valExprGene,
+    dataLinear, lengthDfpancan) {
 
     mFinale <- data.frame(matrix())
 
@@ -155,13 +157,14 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
                 tempMatrix2 <- cbind(tempMatrix2, stratification)
                 colnames(tempMatrix2) <- c("value", "stratification")
 
-                tempMatrix2 <- Analysis(tempMatrix2)
+                tempMatrix2 <- Analysis(tempMatrix2, dataLinear)
                 tempMatrix2 <- as.data.frame(tempMatrix2[, -2])
 
                 # [START] computes the correlation among gene[i] expression data
                 # and methylation data with associated CG
 
-                mTmp <- as.data.frame(rep(dfPancan2[c(1:473), genes[index]],
+                mTmp <- as.data.frame(rep(dfPancan2[c(1:lengthDfpancan),
+                                                    genes[index]],
                     length(cg)))
 
                 mTmp1 <- as.data.frame(tempMatrix2[1:dim(mTmp)[1],])
@@ -220,7 +223,7 @@ setRowNames <- function(df) {
         "pvalue_UPvsMID(gene)","pvalue_UPvsDOWN(gene)","pvalue_MIDvsDOWN(gene)"
     )
 
-    for (i in 1:17) {
+    for (i in 1:length(rowNames)) {
         row.names(df)[i] <- rowNames[i]
     }
 

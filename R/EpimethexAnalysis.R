@@ -1,13 +1,12 @@
 #' Create a Epimethex function
 #'
-#' @param path_dfPancan String, is the path of expression data
-#' @param path_dfGpl String, is the path of Annotations data
-#' @param path_dfMethylation String, is the path of Methylation data
+#' @param dfPancan data.frame, expression data
+#' @param dfGpl data.frame, Annotations data
+#' @param dfMethylation data.frame, Methylation data
 #' @param minRangeGene Numeric
 #' @param maxRangeGene Numeric
 #' @param numCores Numeric, is the number of cores that you can use
 #' @param dataLinear Logic.
-#' @param outputPath String
 #'
 #' @import doParallel
 #' @import foreach
@@ -19,32 +18,66 @@
 #' @importFrom parallel makeCluster
 #' @importFrom parallel stopCluster
 #'
-#' @source Functions
+#' @examples
 #'
-#' @example epimethex.analysis("file_Expression_data","file_Annotations_data",
-#' "file_Methylation_data",100,105,4,FALSE, "path_output_data")
+#' Annotations <- data.frame(
+#'     ID = c("cg1","cg2", "cg3"),
+#'     Relation_to_UCSC_CpG_Island = c("N_Shore","S_Shelf","N_Shore"),
+#'     UCSC_CpG_Islands_Name = c("chrY:11-22","chrY:22-33","chrY:55-66"),
+#'     UCSC_RefGene_Accession = c("NM_00116441;NR_00155","NM_00468","NR_00292"),
+#'     Chromosome_36 = c("Y","Y","Y"),
+#'     Coordinate_36 = c("9973356","21151183","20123684"),
+#'     UCSC_RefGene_Name = c("ARHGEF10L;HIF3A","HIF3A","RNF17"),
+#'     UCSC_RefGene_Group = c("Body;TSS1500","Body","Body"),
+#'     stringsAsFactors=FALSE)
+#'
+#' Expressions <- data.frame(
+#'     sample = c("ARHGEF10L", "HIF3A", "RNF17"),
+#'     TCGA1 = c(-0.746592469762, -0.753826336325, -0.531035005853),
+#'     TCGA2 = c(-0.363492469762, -2.67922633632, -0.531035005853),
+#'     TCGA3 = c(-2.97279246976, 0.679073663675, -4.06262633632),
+#'     TCGA4 = c(-0.613189285993,-0.545547600468, 0.59499523215),
+#'     TCGA5 = c(-0.602787155677, -1.56558715568, 3.11398609442),
+#'     TCGA6 = c(0.323339547405, 0.268878821693, -1.62560252829),
+#'     stringsAsFactors=FALSE)
+#'
+#' Methylation <- data.frame(
+#'     sample = c("cg1", "cg2", "cg3"),
+#'     TCGA1 = c(0.1290, 0.2394, 0.0913),
+#'     TCGA2 = c(0.9214, 0.0193, 0.0281),
+#'     TCGA3 = c(0.5925, 0.8948, 0.0720),
+#'     TCGA4 = c(0.9643, 0.7934, 0.0354),
+#'     TCGA5 = c(0.1298, 0.0243, 0.8296),
+#'     TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
+#'
+#' epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2, FALSE)
+#'
+#' @source Functions
 #'
 #' @return files excel
 #'
 #' @export
-epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
-        minRangeGene, maxRangeGene, numCores, dataLinear, outputPath) {
+epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
+        minRangeGene, maxRangeGene, numCores, dataLinear) {
 
-    dfPancan <- read.table(path_dfPancan, header = TRUE,
-        sep = "\t")[minRangeGene:maxRangeGene,]
+    NUM_ROW_ADDED_FROM_ANALYSIS <- 9
+    NUM_ROW_ADDED_FROM_ANALYSIS_ISLANDS_POSITIONSCG <- 17
+    # dfPancan <- read.table(path_dfPancan, header = TRUE,
+    #     sep = "\t")[minRangeGene:maxRangeGene,]
+    dfPancan <- dfPancan[minRangeGene:maxRangeGene,]
 
     # folder name where xml files will be saved
     nameFD <- paste(as.character(minRangeGene), as.character(maxRangeGene),
         sep = "-")
 
-    dir.create(file.path(outputPath, nameFD))
+    dir.create(file.path(getwd(), nameFD))
 
     # the first 37 rows of probset dataset are comments.
     # The following istruction reads only columns of interest
-    dfGpl <- data.table::fread(path_dfGpl,sep = "\t", header = TRUE,skip = 37,
-        na.strings = c("", "NA"))[-1, c('ID', 'Relation_to_UCSC_CpG_Island',
-        'UCSC_CpG_Islands_Name', 'UCSC_RefGene_Accession', 'Chromosome_36',
-        'Coordinate_36', 'UCSC_RefGene_Name', 'UCSC_RefGene_Group' )]
+    # dfGpl <- data.table::fread(path_dfGpl,sep = "\t", header = TRUE,skip = 37,
+    #     na.strings = c("", "NA"))[-1, c('ID', 'Relation_to_UCSC_CpG_Island',
+    #     'UCSC_CpG_Islands_Name', 'UCSC_RefGene_Accession', 'Chromosome_36',
+    #     'Coordinate_36', 'UCSC_RefGene_Name', 'UCSC_RefGene_Group' )]
 
     # create a new column `island` with the two columns collapsed together
     dfGpl$island <- apply(dfGpl[, c('Relation_to_UCSC_CpG_Island',
@@ -54,7 +87,7 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
     dfGpl <-dfGpl[, -which(names(dfGpl) %in% c('Relation_to_UCSC_CpG_Island',
         'UCSC_CpG_Islands_Name'))]
 
-    dfMethylation <- read.table(path_dfMethylation, sep = "\t", header = TRUE)
+    #dfMethylation <- read.table(path_dfMethylation, sep = "\t", header = TRUE)
 
     # transpose all but the first column (name)
     dfPancan2 <- as.data.frame(t(dfPancan[,-1]))
@@ -92,7 +125,8 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
     # [END]
     lengthDfpancan <- nrow(dfPancan2)
 
-    # [START] calculate the means of all values of genes that are UP, Medium, Down
+    # [START] calculate the means of all values of genes that are UP,
+    # Medium, Down
     meanUP <-apply(dfPancan2[which(dfPancan2$variable %in% "UP"),
         -ncol(dfPancan2)], 2, mean)
 
@@ -129,21 +163,22 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
     # Register cluster
     registerDoParallel(cl)
 
+    indexTmp <- NULL
     #[START] calculate t-test for all genes
     resultUPvsMID <-foreach(indexTmp = 1:dimDFpancan, .combine = rbind)%dopar%{
         calculateTtest(dfPancan2[which(dfPancan2$variable %in% "UP"), indexTmp],
-        dfPancan2[which(dfPancan2$variable %in% "M"), indexTmp], TRUE)
+        dfPancan2[which(dfPancan2$variable %in% "M"), indexTmp], dataLinear)
     }
 
     resultUPvsDOWN <-foreach(indexTmp = 1:dimDFpancan, .combine = rbind)%dopar%{
         calculateTtest(dfPancan2[which(dfPancan2$variable %in% "UP"), indexTmp],
-        dfPancan2[which(dfPancan2$variable %in% "D"), indexTmp], TRUE)
+        dfPancan2[which(dfPancan2$variable %in% "D"), indexTmp], dataLinear)
     }
 
     resultMIDvsDOWN <-
         foreach(indexTmp = 1:dimDFpancan, .combine = rbind)%dopar%{
         calculateTtest(dfPancan2[which(dfPancan2$variable %in% "M"), indexTmp],
-        dfPancan2[which(dfPancan2$variable %in% "D"), indexTmp], TRUE)
+        dfPancan2[which(dfPancan2$variable %in% "D"), indexTmp], dataLinear)
     }
 
     parallel::stopCluster(cl)
@@ -152,6 +187,7 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
     resultUPvsMID <- as.data.frame(t(resultUPvsMID))
     resultUPvsDOWN <- as.data.frame(t(resultUPvsDOWN))
     resultMIDvsDOWN <- as.data.frame(t(resultMIDvsDOWN))
+
     colnames(resultUPvsMID) <- colnames(dfPancan2[, -ncol(dfPancan2)])
     colnames(resultUPvsDOWN) <- colnames(dfPancan2[, -ncol(dfPancan2)])
     colnames(resultMIDvsDOWN) <- colnames(dfPancan2[, -ncol(dfPancan2)])
@@ -247,7 +283,8 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
     #remove islands that have values "NA_NA"
     islands <- Filter(function(x) ! any(grepl("NA_NA", x)), islands)
 
-    stratification <- as.data.frame(rep(c("UP", "Medium", "Down"), each = 158))
+    stratification <- as.data.frame(rep(c("UP", "Medium", "Down"),
+        each = lengthDfpancan/3))
     colnames(stratification) <- "stratification"
 
     gc()
@@ -271,7 +308,7 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
         quietly = TRUE)
 
     # [START] here it is created a dataframe containing
-    # means, beta differences, and pvalues of the stratifications (UP, MED, DOWN)
+    # means, beta differences, and pvalues of the stratifications (UP,MED,DOWN)
     # of all CG in all the postions of all genes.
 
     mFinaleCGglobali <- foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
@@ -284,7 +321,7 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
             ncol = length(DFCGorder[, i]) / lengthDfpancan ))
 
         colnames(tempMatrix) <-
-            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), 1])
+            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), "cg"])
         #[END]
 
         # [START] delete from tempMatrix all the columns that are not associated
@@ -304,7 +341,7 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
 
         if (length(tempMatrix) != 0) {
             tempMatrix <- cbind(tempMatrix, stratification)
-            tempMatrix <- Analysis(tempMatrix)
+            tempMatrix <- Analysis(tempMatrix,dataLinear)
             tempMatrix$stratification <- NULL
         } else{
             flag <- TRUE
@@ -340,16 +377,14 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
         tempMatrix <- rbind(tempMatrix,as.numeric(resultCorrTest$r),
             as.numeric(resultCorrTest$p))
 
-        # [START] delete from tempMatrix the CG expression values,
-        # keeping only the followin rows: "medianDown", "medianMedium", "medianUP",
+        # [START] delete from tempMatrix the CG expression values, keeping
+        # only the followin rows: "medianDown", "medianMedium", "medianUP",
         # "bd_UPvsMID", "bd_UPvsDOWN", "bd_MIDvsDOWN", "pvalue_UPvsMID",
         # "pvalue_UPvsDOWN", "pvalue_MIDvsDOWN", "pearson_correlation",
         #  "pvalue_pearson_correlation"
 
         if (dim(tempMatrix)[1] > lengthDfpancan) {
             tempMatrix <- as.data.frame(tempMatrix[-c(1:lengthDfpancan), ])
-        } else{
-            tempMatrix <- as.data.frame(tempMatrix[-c(1:464), ])
         }
         #[END]
 
@@ -360,12 +395,14 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
         tempMatrix <- data.frame(sapply(tempMatrix, c,
             unlist(valExprGene[, genes[i]])), row.names = NULL)
 
-        # [START] change the columns name associating the CG name with the appropriate position gene (for example cg27394127_TSS1500_BFAR)
+        # [START] change the columns name associating the CG name with the
+        # appropriate position gene (for example cg27394127_TSS1500_BFAR)
 
         colnames(tempMatrix) <-
             paste(as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]),
-            1]),
-            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), 6]),
+            "cg"]),
+            as.character(dfCGunique[
+                which(dfCGunique$gene %in% genes[i]), "position"]),
             genes[i], sep = "_")
         #[END]
 
@@ -384,14 +421,15 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
     tmp <- unlist(lapply(tmp, '[[', 1))
 
     mFinaleCGglobali <- rbind(mFinaleCGglobali,
-        as.character(dfCGunique[which(dfCGunique$cg %in% as.array(tmp)), 7]))
+        as.character(dfCGunique[
+        which(dfCGunique$cg %in% as.array(tmp)), "island"]))
 
     row.names(mFinaleCGglobali)[nrow(mFinaleCGglobali)] <- "island"
     #[END]
     mFinaleCGglobali <- t(mFinaleCGglobali)
 
     xlsx::write.xlsx( mFinaleCGglobali,
-        file.path(outputPath, nameFD, "CG_data_individually.xlsx"),
+        file.path(getwd(), nameFD, "CG_data_individually.xlsx"),
         sheetName = "Sheet1")
 
     remove(mFinaleCGglobali, tmp)
@@ -399,15 +437,17 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
 
     mFinaleCGunificati <- foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
 
-        # [START] create tempMatrix containing the CG values associated to gene[i]
+        # [START] create tempMatrix containing the CG
+        #values associated to gene[i]
         tempMatrix <- data.frame(matrix( DFCGorder[, i], nrow = lengthDfpancan,
             ncol = length(DFCGorder[, i]) / lengthDfpancan))
 
         colnames(tempMatrix) <-
-            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), 1])
+            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), "cg"])
         #[END]
 
-        # [START] delete in tempMatrix the columns not associated in any CG of gene[i]
+        # [START] delete in tempMatrix the columns
+        # not associated in any CG of gene[i]
         keep.cols <- names(tempMatrix) %in% NA
         tempMatrix <- tempMatrix [!keep.cols]
         #[END]
@@ -428,7 +468,7 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
             num_row_m4 <- nrow(tempMatrix)
             tempMatrix <- cbind(tempMatrix, stratification)
             colnames(tempMatrix) <- c("value", "stratification")
-            tempMatrix <- Analysis(tempMatrix)
+            tempMatrix <- Analysis(tempMatrix,dataLinear)
             tempMatrix <- as.data.frame(tempMatrix[,-2])
 
             names(tempMatrix) <- "value"
@@ -454,7 +494,8 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
 
             tempMatrix
         } else{
-            tempMatrix <- as.data.frame(matrix(NA, nrow = 17, ncol = 1))
+            tempMatrix <- as.data.frame(matrix(NA,
+            nrow = NUM_ROW_ADDED_FROM_ANALYSIS_ISLANDS_POSITIONSCG, ncol = 1))
             colnames(tempMatrix) <- paste("CG", genes[i], sep = "_")
 
             tempMatrix
@@ -465,22 +506,24 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
     mFinaleCGunificati <- t(mFinaleCGunificati)
 
     xlsx::write.xlsx( mFinaleCGunificati,
-        file.path(outputPath, nameFD, "CG_of_a_genes.xlsx"),
+        file.path(getwd(), nameFD, "CG_of_a_genes.xlsx"),
             sheetName = "Sheet1")
 
     ###CG group by gene position
 
     mFinaleCGposition <- foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
 
-        # [START] create tempMatrix containing the CG values associated to gene[i]
+        # [START] create tempMatrix containing the CG values
+        # associated to gene[i]
         tempMatrix <- data.frame(matrix( DFCGorder[, i], nrow = lengthDfpancan,
             ncol = length(DFCGorder[, i]) / lengthDfpancan ))
 
         colnames(tempMatrix) <-
-            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), 1])
+            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), "cg"])
         #[END]
 
-        # [START] delete from tempMatrix the columns not associated to any CG in gene[i]
+        # [START] delete from tempMatrix the columns not associated
+        # to any CG in gene[i]
 
         keep.cols <- names(tempMatrix) %in% NA
         tempMatrix <- tempMatrix [!keep.cols]
@@ -489,28 +532,35 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
         colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "_")
 
         AnalysisIslands_PositionsCG(lengthPositions,i,positions,"position",
-            dfCGunique,genes,tempMatrix,stratification,dfPancan2,valExprGene )
+            dfCGunique,genes,tempMatrix,stratification,dfPancan2,valExprGene,
+            dataLinear,lengthDfpancan )
     }
 
-    mFinaleCGposition <- setRowNames(mFinaleCGposition)
-    mFinaleCGposition <- t(mFinaleCGposition)
+    if(plyr::empty(mFinaleCGposition) == FALSE){
 
-    xlsx::write.xlsx( mFinaleCGposition,
-        file.path(outputPath, nameFD, "CG_by_position.xlsx"),
-            sheetName = "Sheet1")
+        mFinaleCGposition <- setRowNames(mFinaleCGposition)
+        mFinaleCGposition <- t(mFinaleCGposition)
+        xlsx::write.xlsx( mFinaleCGposition, file.path(getwd(), nameFD,
+            "CG_by_position.xlsx"), sheetName = "Sheet1")
+    }
+    else{
+        warning("CG_by_position.xlsx is not generated")
+    }
 
     #CG group by island CpG
     mFinaleCGisland <- foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
 
-        # [START] create tempMatrix that contains the CG values associated to gene[i]
+        # [START] create tempMatrix that contains the
+        # CG values associated to gene[i]
         tempMatrix <- data.frame(matrix(DFCGorder[, i], nrow = lengthDfpancan,
             ncol = length(DFCGorder[, i]) / lengthDfpancan ))
 
         colnames(tempMatrix) <-
-            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), 1])
+            as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), "cg"])
         #[END]
 
-        # [START] delete from tempMatrix the columns not associated to any CG of gene[i]
+        # [START] delete from tempMatrix the columns
+        # not associated to any CG of gene[i]
         keep.cols <- names(tempMatrix) %in% NA
         tempMatrix <- tempMatrix [!keep.cols]
         #[END]
@@ -518,12 +568,18 @@ epimethex.analysis <- function(path_dfPancan, path_dfGpl, path_dfMethylation,
         colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "_")
 
         AnalysisIslands_PositionsCG(lengthIslands,i,islands,"island",dfCGunique,
-            genes,tempMatrix,stratification,dfPancan2,valExprGene)
+            genes,tempMatrix,stratification,dfPancan2,valExprGene,
+            dataLinear,lengthDfpancan)
     }
 
-    mFinaleCGisland <- setRowNames(mFinaleCGisland)
-    mFinaleCGisland <- t(mFinaleCGisland)
-    xlsx::write.xlsx(mFinaleCGisland,
-        file.path(outputPath, nameFD, "CG_by_islands.xlsx"),
-        sheetName = "Sheet1")
+    if(plyr::empty(mFinaleCGisland) == FALSE) {
+
+        mFinaleCGisland <- setRowNames(mFinaleCGisland)
+        mFinaleCGisland <- t(mFinaleCGisland)
+        xlsx::write.xlsx(mFinaleCGisland, file.path(getwd(), nameFD,
+            "CG_by_islands.xlsx"), sheetName = "Sheet1")
+    }
+    else{
+        warning("CG_by_islands.xlsx is not generated")
+    }
 }

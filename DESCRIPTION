@@ -1,15 +1,16 @@
 Package: Epimethex
 Type: Package
 Title: EpiMethEx Package
-Version: 0.1.0
-Date: 2018-06-28
-Author: Giuseppe Alessandro Parasiliti Palumbo, Giuseppe Sgroi
-Maintainer: Giuseppe Alessandro Parasiliti Palumbo <giuseppeparasiliti93@gmail.com>, Giuseppe Sgroi <giuseppesgroi@live.it>
+Version: 0.99.0
+Date: 2018-07-01
+Authors@R: c(person("Giuseppe Alessandro", "Parasiliti Palumbo", role = c("cre", "aut"), email = "giuseppeparasiliti93@gmail.com"),
+                person ("Giuseppe", "Sgroi", role = "aut", email = "giuseppesgroi@live.it"))
 Description: A tool for large-scale integrated analysis in methylation hotspots linked to genetic regulation.
 License: file LICENSE
 URL: https://github.com/giupardeb/EpiMethEx
 Encoding: UTF-8
 LazyData: true
+biocViews: Epigenetics, GeneExpression, Software
 RoxygenNote: 6.0.1
 Imports: foreach, doParallel, miscTools, stats, utils, magrittr, parallel
-Suggests: matrixStats, psych, data.table, RcmdrMisc, plyr, xlsx
+Suggests: matrixStats, psych, data.table, RcmdrMisc, plyr, xlsx, testthat
