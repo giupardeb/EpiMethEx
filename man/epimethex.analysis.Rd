@@ -8,7 +8,7 @@ Functions
 }
 \usage{
 epimethex.analysis(dfPancan, dfGpl, dfMethylation, minRangeGene, maxRangeGene,
-    numCores, dataLinear)
+  numCores, dataLinear)
 }
 \arguments{
 \item{dfPancan}{data.frame, expression data}
@@ -52,7 +52,7 @@ Expressions <- data.frame(
     TCGA4 = c(-0.613189285993,-0.545547600468, 0.59499523215),
     TCGA5 = c(-0.602787155677, -1.56558715568, 3.11398609442),
     TCGA6 = c(0.323339547405, 0.268878821693, -1.62560252829),
-stringsAsFactors=FALSE)
+    stringsAsFactors=FALSE)
 
 Methylation <- data.frame(
     sample = c("cg1", "cg2", "cg3"),
@@ -61,8 +61,7 @@ Methylation <- data.frame(
     TCGA3 = c(0.5925, 0.8948, 0.0720),
     TCGA4 = c(0.9643, 0.7934, 0.0354),
     TCGA5 = c(0.1298, 0.0243, 0.8296),
-    TCGA6 = c(0.8508, 0.8952, 0.9893),
-stringsAsFactors=FALSE)
+    TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
 
 epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2, FALSE)
 

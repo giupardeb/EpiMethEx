@@ -112,7 +112,7 @@ Analysis <- function(matrix1,dataLinear) {
 
     matrix1 <- calcBetaDifference(matrix1)
 
-    for (k in 1:dimM) {
+    for (k in seq_len(dimM)) {
         dfTtest[1, k] <- calculateTtest(matrix1[
             which(matrix1$stratification %in% "UP"), k],
             matrix1[which(matrix1$stratification %in% "Medium"), k], dataLinear)
@@ -139,7 +139,7 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
 
     mFinale <- data.frame(matrix())
 
-    for (k in 1:leng) {
+    for (k in seq_len(leng)) {
         cg <- as.vector(dfCGunique[which(dfCGunique$gene %in% genes[index] &
             dfCGunique[, column] %in% position[k]), 1])
 
@@ -163,11 +163,11 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
                 # [START] computes the correlation among gene[i] expression data
                 # and methylation data with associated CG
 
-                mTmp <- as.data.frame(rep(dfPancan2[c(1:lengthDfpancan),
+                mTmp <- as.data.frame(rep(dfPancan2[c(seq_len(lengthDfpancan)),
                                                     genes[index]],
                     length(cg)))
 
-                mTmp1 <- as.data.frame(tempMatrix2[1:dim(mTmp)[1],])
+                mTmp1 <- as.data.frame(tempMatrix2[seq_len(dim(mTmp)[1]),])
                 resultCorrTest <- psych::corr.test(mTmp, mTmp1, adjust = "none")
 
                 #add pearson correlation and p-value
@@ -178,7 +178,7 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
                 tempMatrix2 <- data.frame(sapply(tempMatrix2, c,
                     unlist(valExprGene[, genes[index]])), row.names = NULL)
 
-                tempMatrix2 <- as.data.frame(tempMatrix2[-c(1:num_row), ])
+                tempMatrix2 <- as.data.frame(tempMatrix2[-c(seq_len(num_row)), ])
                 colnames(tempMatrix2) <- paste(position[k], genes[index],
                     sep = "_")
                 mFinale <- cbind(mFinale, tempMatrix2)
@@ -223,7 +223,7 @@ setRowNames <- function(df) {
         "pvalue_UPvsMID(gene)","pvalue_UPvsDOWN(gene)","pvalue_MIDvsDOWN(gene)"
     )
 
-    for (i in 1:length(rowNames)) {
+    for (i in seq_len(length(rowNames))) {
         row.names(df)[i] <- rowNames[i]
     }
 

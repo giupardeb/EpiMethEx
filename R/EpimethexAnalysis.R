@@ -99,7 +99,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     #indexTCGA contains all the sorted patient's genes
     indexTCGA <- data.frame(sapply(seq_along(dfPancan2), function(x) {
         row.names(dfPancan2[order(dfPancan2[x], decreasing = TRUE),
-        x, drop = FALSE]) }))
+        x, drop = FALSE])}))
 
     colnames(indexTCGA) <- colnames(dfPancan2)
     dfPancan2 <- apply(dfPancan2, 2, sort, decreasing = TRUE)
@@ -165,18 +165,18 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
 
     indexTmp <- NULL
     #[START] calculate t-test for all genes
-    resultUPvsMID <-foreach(indexTmp = 1:dimDFpancan, .combine = rbind)%dopar%{
+    resultUPvsMID <-foreach(indexTmp = seq_len(dimDFpancan), .combine = rbind)%dopar%{
         calculateTtest(dfPancan2[which(dfPancan2$variable %in% "UP"), indexTmp],
         dfPancan2[which(dfPancan2$variable %in% "M"), indexTmp], dataLinear)
     }
 
-    resultUPvsDOWN <-foreach(indexTmp = 1:dimDFpancan, .combine = rbind)%dopar%{
+    resultUPvsDOWN <-foreach(indexTmp = seq_len(dimDFpancan), .combine = rbind)%dopar%{
         calculateTtest(dfPancan2[which(dfPancan2$variable %in% "UP"), indexTmp],
         dfPancan2[which(dfPancan2$variable %in% "D"), indexTmp], dataLinear)
     }
 
     resultMIDvsDOWN <-
-        foreach(indexTmp = 1:dimDFpancan, .combine = rbind)%dopar%{
+        foreach(indexTmp = seq_len(dimDFpancan), .combine = rbind)%dopar%{
         calculateTtest(dfPancan2[which(dfPancan2$variable %in% "M"), indexTmp],
         dfPancan2[which(dfPancan2$variable %in% "D"), indexTmp], dataLinear)
     }
@@ -259,7 +259,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     data.table::setkey(data.table::as.data.table(dfMethylation), sample)
     gc()
 
-    tmp <- tapply(lapply(1:nrow(dfCGunique),function (i)
+    tmp <- tapply(lapply(seq_len(nrow(dfCGunique)),function (i)
         (dfMethylation[as.vector(dfCGunique[i, 1]),
         as.vector(indexTCGA[,as.vector( dfCGunique[i, "gene"])])])),
         factor(dfCGunique[, "gene"]), function (x) { unname(unlist(x))})
@@ -311,7 +311,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     # means, beta differences, and pvalues of the stratifications (UP,MED,DOWN)
     # of all CG in all the postions of all genes.
 
-    mFinaleCGglobali <- foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
+    mFinaleCGglobali <- foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
 
         flag <- FALSE
 
@@ -350,7 +350,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
         # insert in tempMatrix columns that were deleted in the same position
 
         if (length(columnNA) != 0) {
-            for (j in 1:length(columnNA)) {
+            for (j in seq_len(length(columnNA))) {
                 tempMatrix <-
                 insertCol(as.matrix(tempMatrix), columnNA[[j]], v = NA)
             }
@@ -365,9 +365,9 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
         # and methylation data of associated CG
 
         DataexpressionGeneTmp <-
-            as.data.frame(dfPancan2[c(1:lengthDfpancan), genes[i]])
+            as.data.frame(dfPancan2[c(seq_len(lengthDfpancan)), genes[i]])
 
-        DataCG_Tmp <- as.data.frame(tempMatrix[c(1:lengthDfpancan), ])
+        DataCG_Tmp <- as.data.frame(tempMatrix[c(seq_len(lengthDfpancan)), ])
 
         # compute the correlation test among gene expression data and CG data
 
@@ -384,7 +384,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
         #  "pvalue_pearson_correlation"
 
         if (dim(tempMatrix)[1] > lengthDfpancan) {
-            tempMatrix <- as.data.frame(tempMatrix[-c(1:lengthDfpancan), ])
+            tempMatrix <- as.data.frame(tempMatrix[-c(seq_len(lengthDfpancan)), ])
         }
         #[END]
 
@@ -435,7 +435,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     remove(mFinaleCGglobali, tmp)
     gc()
 
-    mFinaleCGunificati <- foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
+    mFinaleCGunificati <- foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
 
         # [START] create tempMatrix containing the CG
         #values associated to gene[i]
@@ -476,17 +476,17 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
             # [START] compute the correlation among gene[i] expression data and
             # methylation data of associated CG
             dfTmp <-
-                as.data.frame(rep(dfPancan2[c(1:lengthDfpancan), genes[i]],
+                as.data.frame(rep(dfPancan2[c(seq_len(lengthDfpancan)), genes[i]],
                 num_CG))
 
-            m4Tmp <- as.data.frame(tempMatrix[c(1:num_row_m4), ])
+            m4Tmp <- as.data.frame(tempMatrix[c(seq_len(num_row_m4)), ])
             resultCorrTest <- psych::corr.test(dfTmp, m4Tmp, adjust = "none")
 
             tempMatrix <- rbind(tempMatrix, as.numeric(resultCorrTest$r),
                 as.numeric(resultCorrTest$p))
             #[END]
 
-            tempMatrix <- as.data.frame(tempMatrix[-c(1:num_row_m4),])
+            tempMatrix <- as.data.frame(tempMatrix[-c(seq_len(num_row_m4)),])
             tempMatrix <- data.frame(sapply(tempMatrix, c,
                 unlist(valExprGene[, genes[i]])), row.names = NULL)
             colnames(tempMatrix) <- paste("CG", genes[i], sep = "_")
@@ -511,7 +511,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
 
     ###CG group by gene position
 
-    mFinaleCGposition <- foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
+    mFinaleCGposition <- foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
 
         # [START] create tempMatrix containing the CG values
         # associated to gene[i]
@@ -548,7 +548,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     }
 
     #CG group by island CpG
-    mFinaleCGisland <- foreach(i = 1:lengthGens, .combine = cbind) %dopar% {
+    mFinaleCGisland <- foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
 
         # [START] create tempMatrix that contains the
         # CG values associated to gene[i]
