@@ -1,7 +1,7 @@
 Package: EpiMethEx
 Type: Package
 Title: EpiMethEx Package
-Version: 0.1.1
+Version: 0.99.0
 Date: 2018-07-01
 Authors@R: c(person("Giuseppe Alessandro", "Parasiliti Palumbo", role = c("cre", "aut"), email = "giuseppeparasiliti93@gmail.com"),
                 person ("Giuseppe", "Sgroi", role = "aut", email = "giuseppesgroi@live.it"))
