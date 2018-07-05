@@ -7,19 +7,19 @@
 Functions
 }
 \usage{
-epimethex.analysis(dfPancan, dfGpl, dfMethylation, minRangeGene, maxRangeGene,
-  numCores, dataLinear)
+epimethex.analysis(dfExpressions, dfGpl, dfMethylation, minRangeGene,
+    maxRangeGene, numCores, dataLinear)
 }
 \arguments{
-\item{dfPancan}{data.frame, expression data}
+\item{dfExpressions}{data frame, expression of data}
 
-\item{dfGpl}{data.frame, Annotations data}
+\item{dfGpl}{data frame, Annotations of data}
 
-\item{dfMethylation}{data.frame, Methylation data}
+\item{dfMethylation}{data frame, Methylation of data}
 
-\item{minRangeGene}{Numeric}
+\item{minRangeGene}{Numeric, lowerbound of genes}
 
-\item{maxRangeGene}{Numeric}
+\item{maxRangeGene}{Numeric, upperbound of genes}
 
 \item{numCores}{Numeric, is the number of cores that you can use}
 

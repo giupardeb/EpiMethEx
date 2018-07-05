@@ -1,0 +1,93 @@
+---
+title: "EpiMethEx Analysis"
+author: "Giuseppe Alessandro Parasiliti Palumbo, Giuseppe Sgroi"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+    %\VignetteIndexEntry{Vignette Title}
+    %\VignetteEngine{knitr::rmarkdown}
+    %\VignetteEncoding{UTF-8}
+---
+# EpiMethEx Analysis
+
+DNA methylation is an epigenetic mechanism of genomic regulation involved in the
+maintenance of homeostatic balance. Dysregulation of DNA methylation status is 
+one of the driver alterations occurring in neoplastic transformation and cancer 
+progression. The identification of methylation hotspot associated to gene 
+dysregulation may contribute to discover new prognostic and diagnostic 
+biomarker, as well as, new therapeutic target.
+
+We present EpiMethEx (Epigenetic Methylation and Expression), a R package to 
+perform a large-scale integrated analysis by cyclic correlation analyses 
+between methylation and gene expression data. For each gene, samples are 
+segmented according to the expression levels to select genes that are 
+differentially expressed. This stratification allows to identify CG 
+methylation probesets modulated among gene-stratified samples. 
+Subsequently, the methylation probesets are clustered by their relative 
+position in gene sequence to identify wide genomic methylation events 
+statically related to genetic modulation. The simulation study showed that 
+the global methylation analysis was in agreement with scientific literature. 
+In particular, this analysis revealed a negative association between promoter
+hypomethylation and overexpression in a wide number of genes. Less frequently, 
+this overexpression was sustained by intragenic hypermethylation events.
+
+Before to execute the analysis is necessary to create three 
+dataframes (gene expression data, methylation data, annotation data), 
+as well as in the example below:
+
+##Expressions data Frame
+```{r, echo=TRUE}
+data.frame(
+    sample = c("ARHGEF10L", "HIF3A", "RNF17"),
+    TCGA1 = c(-0.746592469762, -0.753826336325, -0.531035005853),
+    TCGA2 = c(-0.363492469762, -2.67922633632, -0.531035005853),
+    TCGA3 = c(-2.97279246976, 0.679073663675, -4.06262633632),
+    TCGA4 = c(-0.613189285993,-0.545547600468, 0.59499523215),
+    TCGA5 = c(-0.602787155677, -1.56558715568, 3.11398609442),
+    TCGA6 = c(0.323339547405, 0.268878821693, -1.62560252829),
+    stringsAsFactors=FALSE)
+```
+##Methylation data Frame
+```{r, echo=TRUE}
+data.frame(
+    sample = c("cg1", "cg2", "cg3"),
+    TCGA1 = c(0.1290, 0.2394, 0.0913),
+    TCGA2 = c(0.9214, 0.0193, 0.0281),
+    TCGA3 = c(0.5925, 0.8948, 0.0720),
+    TCGA4 = c(0.9643, 0.7934, 0.0354),
+    TCGA5 = c(0.1298, 0.0243, 0.8296),
+    TCGA6 = c(0.8508, 0.8952, 0.9893),
+    stringsAsFactors=FALSE)
+```
+##Annotations data Frame
+```{r, echo=TRUE}
+data.frame(
+    ID = c("cg1","cg2", "cg3"),
+    Relation_to_UCSC_CpG_Island = c("N_Shore","S_Shelf","N_Shore"),
+    UCSC_CpG_Islands_Name = c("chrY:11-22","chrY:22-33","chrY:55-66"),
+    UCSC_RefGene_Accession = c("NM_00116441;NR_00155","NM_00468","NR_00292"),
+    Chromosome_36 = c("Y","Y","Y"),
+    Coordinate_36 = c("9973356","21151183","20123684"),
+    UCSC_RefGene_Name = c("ARHGEF10L;HIF3A","HIF3A","RNF17"),
+    UCSC_RefGene_Group = c("Body;TSS1500","Body","Body"),
+    stringsAsFactors=FALSE)
+```
+
+Then you can execute:
+
+```{r, eval=FALSE}
+library(Epimethex)
+epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2, FALSE)
+```
+
+###Brief description of the parameters
+1. Expressions = data frame of expression data 
+2. Annotations = data frame of Annotations data
+3. Methylation = data frame ofMethylation data
+4. "1,5" = it is the range of genes to consider
+5. "2" = indicates the number of cores to use
+6. indicates whether the data considered are linear(TRUE) or logarithmic(FALSE)
+
+#Final Result
+
+the analysis will produce .xlsx files

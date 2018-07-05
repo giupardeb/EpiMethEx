@@ -178,7 +178,7 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
                 tempMatrix2 <- data.frame(sapply(tempMatrix2, c,
                     unlist(valExprGene[, genes[index]])), row.names = NULL)
 
-                tempMatrix2 <- as.data.frame(tempMatrix2[-c(seq_len(num_row)), ])
+                tempMatrix2 <- as.data.frame(tempMatrix2[-c(seq_len(num_row)),])
                 colnames(tempMatrix2) <- paste(position[k], genes[index],
                     sep = "_")
                 mFinale <- cbind(mFinale, tempMatrix2)

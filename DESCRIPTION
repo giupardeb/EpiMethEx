@@ -13,4 +13,7 @@ LazyData: true
 biocViews: Epigenetics, GeneExpression, Software
 RoxygenNote: 6.0.1
 Imports: foreach, doParallel, miscTools, stats, utils, magrittr, parallel
-Suggests: matrixStats, psych, data.table, RcmdrMisc, plyr, xlsx, testthat
+Suggests: matrixStats, psych, data.table, RcmdrMisc, plyr, xlsx, testthat,
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

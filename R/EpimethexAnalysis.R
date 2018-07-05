@@ -1,10 +1,10 @@
 #' Create a Epimethex function
 #'
-#' @param dfPancan data.frame, expression data
-#' @param dfGpl data.frame, Annotations data
-#' @param dfMethylation data.frame, Methylation data
-#' @param minRangeGene Numeric
-#' @param maxRangeGene Numeric
+#' @param dfExpressions data frame, expression of data
+#' @param dfGpl data frame, Annotations of data
+#' @param dfMethylation data frame, Methylation of data
+#' @param minRangeGene Numeric, lowerbound of genes
+#' @param maxRangeGene Numeric, upperbound of genes
 #' @param numCores Numeric, is the number of cores that you can use
 #' @param dataLinear Logic.
 #'
@@ -57,27 +57,19 @@
 #' @return files excel
 #'
 #' @export
-epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
+epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         minRangeGene, maxRangeGene, numCores, dataLinear) {
 
     NUM_ROW_ADDED_FROM_ANALYSIS <- 9
     NUM_ROW_ADDED_FROM_ANALYSIS_ISLANDS_POSITIONSCG <- 17
-    # dfPancan <- read.table(path_dfPancan, header = TRUE,
-    #     sep = "\t")[minRangeGene:maxRangeGene,]
-    dfPancan <- dfPancan[minRangeGene:maxRangeGene,]
+
+    dfExpressions <- dfExpressions[minRangeGene:maxRangeGene,]
 
     # folder name where xml files will be saved
     nameFD <- paste(as.character(minRangeGene), as.character(maxRangeGene),
         sep = "-")
 
     dir.create(file.path(getwd(), nameFD))
-
-    # the first 37 rows of probset dataset are comments.
-    # The following istruction reads only columns of interest
-    # dfGpl <- data.table::fread(path_dfGpl,sep = "\t", header = TRUE,skip = 37,
-    #     na.strings = c("", "NA"))[-1, c('ID', 'Relation_to_UCSC_CpG_Island',
-    #     'UCSC_CpG_Islands_Name', 'UCSC_RefGene_Accession', 'Chromosome_36',
-    #     'Coordinate_36', 'UCSC_RefGene_Name', 'UCSC_RefGene_Group' )]
 
     # create a new column `island` with the two columns collapsed together
     dfGpl$island <- apply(dfGpl[, c('Relation_to_UCSC_CpG_Island',
@@ -87,75 +79,73 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     dfGpl <-dfGpl[, -which(names(dfGpl) %in% c('Relation_to_UCSC_CpG_Island',
         'UCSC_CpG_Islands_Name'))]
 
-    #dfMethylation <- read.table(path_dfMethylation, sep = "\t", header = TRUE)
-
     # transpose all but the first column (name)
-    dfPancan2 <- as.data.frame(t(dfPancan[,-1]))
-    colnames(dfPancan2) <- dfPancan$sample
+    dfExpressions2 <- as.data.frame(t(dfExpressions[,-1]))
+    colnames(dfExpressions2) <- dfExpressions$sample
 
     #remove all genes that have all values equal to zero
-    dfPancan2 <- dfPancan2[, which(!apply(dfPancan2 == 0, 2, all))]
+    dfExpressions2 <- dfExpressions2[, which(!apply(
+        dfExpressions2 == 0, 2, all))]
 
     #indexTCGA contains all the sorted patient's genes
-    indexTCGA <- data.frame(sapply(seq_along(dfPancan2), function(x) {
-        row.names(dfPancan2[order(dfPancan2[x], decreasing = TRUE),
+    indexTCGA <- data.frame(sapply(seq_along(dfExpressions2), function(x) {
+        row.names(dfExpressions2[order(dfExpressions2[x], decreasing = TRUE),
         x, drop = FALSE])}))
 
-    colnames(indexTCGA) <- colnames(dfPancan2)
-    dfPancan2 <- apply(dfPancan2, 2, sort, decreasing = TRUE)
+    colnames(indexTCGA) <- colnames(dfExpressions2)
+    dfExpressions2 <- apply(dfExpressions2, 2, sort, decreasing = TRUE)
 
-    #calculate quantili of all genes into dfPancan2
-    if (requireNamespace("matrixStats", quietly = TRUE)) {
-        quantili <- data.frame(matrixStats::colQuantiles(dfPancan2,
+    #calculate quantili of all genes into dfExpressions2
+    quantili <- data.frame(matrixStats::colQuantiles(dfExpressions2,
         probs = c(0.33, 0.66, 0.99)))
-    }
 
     data.table::setnames(quantili, c("perc33", "perc66", "perc99"))
     quantili <- as.data.frame(t(quantili))
 
-    dfPancan2 <- as.data.frame(dfPancan2)
+    dfExpressions2 <- as.data.frame(dfExpressions2)
 
-    # [START] these istructions divide into equal parts the dfPancan2
-    index <- which.max(apply(dfPancan2, 2, function(x) length(unique(x))))[[1]]
+    # [START] these istructions divide into equal parts the dfExpressions2
+    index <- which.max(apply(dfExpressions2, 2,
+        function(x) length(unique(x))))[[1]]
 
-    dfPancan2$variable <- with( dfPancan2, RcmdrMisc::bin.var(
-        dfPancan2[, index], bins = 3, method = 'proportions',
+    dfExpressions2$variable <- with( dfExpressions2, RcmdrMisc::bin.var(
+        dfExpressions2[, index], bins = 3, method = 'proportions',
         labels = c('D', 'M', 'UP')))
 
     # [END]
-    lengthDfpancan <- nrow(dfPancan2)
+    lengthdfExpressions <- nrow(dfExpressions2)
 
     # [START] calculate the means of all values of genes that are UP,
     # Medium, Down
-    meanUP <-apply(dfPancan2[which(dfPancan2$variable %in% "UP"),
-        -ncol(dfPancan2)], 2, mean)
+    meanUP <-apply(dfExpressions2[which(dfExpressions2$variable %in% "UP"),
+        -ncol(dfExpressions2)], 2, mean)
 
-    meanMID <- apply(dfPancan2[which(dfPancan2$variable %in% "M"),
-        -ncol(dfPancan2)], 2, mean)
+    meanMID <- apply(dfExpressions2[which(dfExpressions2$variable %in% "M"),
+        -ncol(dfExpressions2)], 2, mean)
 
-    meanDOWN <- apply(dfPancan2[which(dfPancan2$variable %in% "D"),
-        -ncol(dfPancan2)], 2, mean)
+    meanDOWN <- apply(dfExpressions2[which(dfExpressions2$variable %in% "D"),
+        -ncol(dfExpressions2)], 2, mean)
     # [END]
-    dfPancan2 <- rbind(dfPancan2, meanDOWN, meanMID, meanUP)
+    dfExpressions2 <- rbind(dfExpressions2, meanDOWN, meanMID, meanUP)
 
     remove(meanUP, meanMID, meanDOWN)
 
-    dfPancan2 <- plyr::rbind.fill(dfPancan2, quantili)
+    dfExpressions2 <- plyr::rbind.fill(dfExpressions2, quantili)
 
     remove(quantili)
 
-    ROW_MEAN_DOWN <- nrow(dfPancan2) - 5
-    ROW_MEAN_MEDIUM <- nrow(dfPancan2) - 4
-    ROW_MEAN_UP <- nrow(dfPancan2) - 3
-    ROW_PERC_33 <- nrow(dfPancan2) - 2
-    ROW_PERC_66 <- nrow(dfPancan2) - 1
-    ROW_PERC_99 <- nrow(dfPancan2)
+    ROW_MEAN_DOWN <- nrow(dfExpressions2) - 5
+    ROW_MEAN_MEDIUM <- nrow(dfExpressions2) - 4
+    ROW_MEAN_UP <- nrow(dfExpressions2) - 3
+    ROW_PERC_33 <- nrow(dfExpressions2) - 2
+    ROW_PERC_66 <- nrow(dfExpressions2) - 1
+    ROW_PERC_99 <- nrow(dfExpressions2)
     gc()
 
     #Compute combinations fold change (up vs mid, up vs down, etc..)
-    dfPancan2 <- calcFC(dfPancan2, dataLinear)
+    dfExpressions2 <- calcFC(dfExpressions2, dataLinear)
 
-    dimDFpancan <- dim(dfPancan2[, -ncol(dfPancan2)])[2]
+    dimdfExpressions <- dim(dfExpressions2[, -ncol(dfExpressions2)])[2]
 
     # Create cluster with desired number of cores
     cl <- parallel::makeCluster(numCores)
@@ -165,20 +155,28 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
 
     indexTmp <- NULL
     #[START] calculate t-test for all genes
-    resultUPvsMID <-foreach(indexTmp = seq_len(dimDFpancan), .combine = rbind)%dopar%{
-        calculateTtest(dfPancan2[which(dfPancan2$variable %in% "UP"), indexTmp],
-        dfPancan2[which(dfPancan2$variable %in% "M"), indexTmp], dataLinear)
+    resultUPvsMID <-
+    foreach(indexTmp = seq_len(dimdfExpressions), .combine = rbind)%dopar%{
+        calculateTtest(dfExpressions2[which(dfExpressions2$variable %in% "UP"),
+            indexTmp],
+        dfExpressions2[which(dfExpressions2$variable %in% "M"), indexTmp],
+            dataLinear)
     }
 
-    resultUPvsDOWN <-foreach(indexTmp = seq_len(dimDFpancan), .combine = rbind)%dopar%{
-        calculateTtest(dfPancan2[which(dfPancan2$variable %in% "UP"), indexTmp],
-        dfPancan2[which(dfPancan2$variable %in% "D"), indexTmp], dataLinear)
+    resultUPvsDOWN <-
+    foreach(indexTmp = seq_len(dimdfExpressions), .combine = rbind)%dopar%{
+        calculateTtest(dfExpressions2[which(dfExpressions2$variable %in% "UP"),
+            indexTmp],
+        dfExpressions2[which(dfExpressions2$variable %in% "D"), indexTmp],
+            dataLinear)
     }
 
     resultMIDvsDOWN <-
-        foreach(indexTmp = seq_len(dimDFpancan), .combine = rbind)%dopar%{
-        calculateTtest(dfPancan2[which(dfPancan2$variable %in% "M"), indexTmp],
-        dfPancan2[which(dfPancan2$variable %in% "D"), indexTmp], dataLinear)
+    foreach(indexTmp = seq_len(dimdfExpressions), .combine = rbind)%dopar%{
+        calculateTtest(dfExpressions2[which(dfExpressions2$variable %in% "M"),
+            indexTmp],
+        dfExpressions2[which(dfExpressions2$variable %in% "D"), indexTmp],
+            dataLinear)
     }
 
     parallel::stopCluster(cl)
@@ -188,25 +186,25 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     resultUPvsDOWN <- as.data.frame(t(resultUPvsDOWN))
     resultMIDvsDOWN <- as.data.frame(t(resultMIDvsDOWN))
 
-    colnames(resultUPvsMID) <- colnames(dfPancan2[, -ncol(dfPancan2)])
-    colnames(resultUPvsDOWN) <- colnames(dfPancan2[, -ncol(dfPancan2)])
-    colnames(resultMIDvsDOWN) <- colnames(dfPancan2[, -ncol(dfPancan2)])
+    colnames(resultUPvsMID) <-colnames(dfExpressions2[, -ncol(dfExpressions2)])
+    colnames(resultUPvsDOWN) <-colnames(dfExpressions2[,-ncol(dfExpressions2)])
+    colnames(resultMIDvsDOWN) <-colnames(dfExpressions2[,-ncol(dfExpressions2)])
 
-    dfPancan2 <- plyr::rbind.fill(dfPancan2,
+    dfExpressions2 <- plyr::rbind.fill(dfExpressions2,
         resultUPvsMID, resultUPvsDOWN, resultMIDvsDOWN)
 
     remove(resultUPvsMID, resultUPvsDOWN, resultMIDvsDOWN)
     gc()
 
-    ROW_FC_UPvsMID <- nrow(dfPancan2) - 8
-    ROW_FC_UPvsDOWN <- nrow(dfPancan2) - 7
-    ROW_FC_MIDvsDOWN <- nrow(dfPancan2) - 6
-    ROW_TTEST_UPvsMID <- nrow(dfPancan2) - 5
-    ROW_PVALUE_UPvsMID <- nrow(dfPancan2) - 4
-    ROW_TTEST_UPvsDOWN <- nrow(dfPancan2) - 3
-    ROW_PVALUE_UPvsDOWN <- nrow(dfPancan2) - 2
-    ROW_TTEST_MIDvsDOWN <- nrow(dfPancan2) - 1
-    ROW_PVALUE_MIDvsDOWN <- nrow(dfPancan2)
+    ROW_FC_UPvsMID <- nrow(dfExpressions2) - 8
+    ROW_FC_UPvsDOWN <- nrow(dfExpressions2) - 7
+    ROW_FC_MIDvsDOWN <- nrow(dfExpressions2) - 6
+    ROW_TTEST_UPvsMID <- nrow(dfExpressions2) - 5
+    ROW_PVALUE_UPvsMID <- nrow(dfExpressions2) - 4
+    ROW_TTEST_UPvsDOWN <- nrow(dfExpressions2) - 3
+    ROW_PVALUE_UPvsDOWN <- nrow(dfExpressions2) - 2
+    ROW_TTEST_MIDvsDOWN <- nrow(dfExpressions2) - 1
+    ROW_PVALUE_MIDvsDOWN <- nrow(dfExpressions2)
 
     rowNames <- c("meanDown", "meanMedium", "meanUP", "perc33", "perc66",
         "perc99", "fc_UPvsMID", "fc_UPvsDOWN", "fc_MIDvsDOWN", "ttest_UPvsMID",
@@ -215,7 +213,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
 
     j <- 1
     for (i in ROW_MEAN_DOWN:ROW_PVALUE_MIDvsDOWN) {
-        row.names(dfPancan2)[i] <- rowNames[j]
+        row.names(dfExpressions2)[i] <- rowNames[j]
         j <- j + 1
     }
 
@@ -236,11 +234,11 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     remove(s, s1, s2, dfGpl)
     gc()
 
-    #remove genes and cg that aren't into dfPancan2 from dfAnnotations
+    #remove genes and cg that aren't into dfExpressions2 from dfAnnotations
     dfAnnotations <- subset(dfAnnotations,
-        as.character(dfAnnotations$gene) %in% names(dfPancan2))
+        as.character(dfAnnotations$gene) %in% names(dfExpressions2))
 
-    #remove genes and cg that aren't into dfPancan2 from dfMethylation
+    #remove genes and cg that aren't into dfExpressions2 from dfMethylation
     dfMethylation <-subset(dfMethylation,
         as.character(dfMethylation$sample) %in% dfAnnotations$cg)
 
@@ -273,9 +271,9 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
         return (x)
     }))
 
-    valExprGene <- dfPancan2[c(ROW_FC_UPvsMID:ROW_FC_MIDvsDOWN,
+    valExprGene <- dfExpressions2[c(ROW_FC_UPvsMID:ROW_FC_MIDvsDOWN,
         ROW_PVALUE_UPvsMID, ROW_PVALUE_UPvsDOWN, ROW_PVALUE_MIDvsDOWN),
-        -ncol(dfPancan2)]
+        -ncol(dfExpressions2)]
 
     positions <- as.vector(unique(dfCGunique$position))
     genes <- colnames(DFCGorder)
@@ -284,7 +282,7 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     islands <- Filter(function(x) ! any(grepl("NA_NA", x)), islands)
 
     stratification <- as.data.frame(rep(c("UP", "Medium", "Down"),
-        each = lengthDfpancan/3))
+        each = lengthdfExpressions/3))
     colnames(stratification) <- "stratification"
 
     gc()
@@ -311,14 +309,15 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     # means, beta differences, and pvalues of the stratifications (UP,MED,DOWN)
     # of all CG in all the postions of all genes.
 
-    mFinaleCGglobali <- foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
+    mFinaleCGglobali <-
+    foreach(i = seq_len(lengthGens), .combine = cbind)%dopar% {
 
         flag <- FALSE
 
         # [START] create the tempMatrix that will contain all the CG values
         # of the gene "i"
-        tempMatrix <- data.frame(matrix(DFCGorder[, i],nrow = lengthDfpancan,
-            ncol = length(DFCGorder[, i]) / lengthDfpancan ))
+        tempMatrix <- data.frame(matrix(DFCGorder[, i],nrow=lengthdfExpressions,
+            ncol = length(DFCGorder[, i]) / lengthdfExpressions ))
 
         colnames(tempMatrix) <-
             as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), "cg"])
@@ -365,9 +364,11 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
         # and methylation data of associated CG
 
         DataexpressionGeneTmp <-
-            as.data.frame(dfPancan2[c(seq_len(lengthDfpancan)), genes[i]])
+            as.data.frame(dfExpressions2[c(seq_len(lengthdfExpressions)),
+                genes[i]])
 
-        DataCG_Tmp <- as.data.frame(tempMatrix[c(seq_len(lengthDfpancan)), ])
+        DataCG_Tmp <-
+            as.data.frame(tempMatrix[c(seq_len(lengthdfExpressions)), ])
 
         # compute the correlation test among gene expression data and CG data
 
@@ -383,8 +384,9 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
         # "pvalue_UPvsDOWN", "pvalue_MIDvsDOWN", "pearson_correlation",
         #  "pvalue_pearson_correlation"
 
-        if (dim(tempMatrix)[1] > lengthDfpancan) {
-            tempMatrix <- as.data.frame(tempMatrix[-c(seq_len(lengthDfpancan)), ])
+        if (dim(tempMatrix)[1] > lengthdfExpressions) {
+            tempMatrix <-
+                as.data.frame(tempMatrix[-c(seq_len(lengthdfExpressions)),])
         }
         #[END]
 
@@ -435,12 +437,13 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     remove(mFinaleCGglobali, tmp)
     gc()
 
-    mFinaleCGunificati <- foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
+    mFinaleCGunificati <-
+    foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
 
         # [START] create tempMatrix containing the CG
         #values associated to gene[i]
-        tempMatrix <- data.frame(matrix( DFCGorder[, i], nrow = lengthDfpancan,
-            ncol = length(DFCGorder[, i]) / lengthDfpancan))
+        tempMatrix<-data.frame(matrix( DFCGorder[, i], nrow=lengthdfExpressions,
+            ncol = length(DFCGorder[, i]) / lengthdfExpressions))
 
         colnames(tempMatrix) <-
             as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), "cg"])
@@ -476,7 +479,8 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
             # [START] compute the correlation among gene[i] expression data and
             # methylation data of associated CG
             dfTmp <-
-                as.data.frame(rep(dfPancan2[c(seq_len(lengthDfpancan)), genes[i]],
+                as.data.frame(rep(dfExpressions2[
+                c(seq_len(lengthdfExpressions)), genes[i]],
                 num_CG))
 
             m4Tmp <- as.data.frame(tempMatrix[c(seq_len(num_row_m4)), ])
@@ -511,12 +515,13 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
 
     ###CG group by gene position
 
-    mFinaleCGposition <- foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
+    mFinaleCGposition <-
+    foreach(i = seq_len(lengthGens), .combine = cbind)%dopar% {
 
         # [START] create tempMatrix containing the CG values
         # associated to gene[i]
-        tempMatrix <- data.frame(matrix( DFCGorder[, i], nrow = lengthDfpancan,
-            ncol = length(DFCGorder[, i]) / lengthDfpancan ))
+        tempMatrix<-data.frame(matrix( DFCGorder[, i], nrow=lengthdfExpressions,
+            ncol = length(DFCGorder[, i]) / lengthdfExpressions ))
 
         colnames(tempMatrix) <-
             as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), "cg"])
@@ -532,8 +537,8 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
         colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "_")
 
         AnalysisIslands_PositionsCG(lengthPositions,i,positions,"position",
-            dfCGunique,genes,tempMatrix,stratification,dfPancan2,valExprGene,
-            dataLinear,lengthDfpancan )
+            dfCGunique,genes,tempMatrix,stratification,dfExpressions2,
+            valExprGene, dataLinear,lengthdfExpressions )
     }
 
     if(plyr::empty(mFinaleCGposition) == FALSE){
@@ -548,12 +553,13 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
     }
 
     #CG group by island CpG
-    mFinaleCGisland <- foreach(i = seq_len(lengthGens), .combine = cbind) %dopar% {
+    mFinaleCGisland <-
+    foreach(i = seq_len(lengthGens), .combine = cbind)%dopar% {
 
         # [START] create tempMatrix that contains the
         # CG values associated to gene[i]
-        tempMatrix <- data.frame(matrix(DFCGorder[, i], nrow = lengthDfpancan,
-            ncol = length(DFCGorder[, i]) / lengthDfpancan ))
+        tempMatrix<-data.frame(matrix(DFCGorder[, i], nrow=lengthdfExpressions,
+            ncol = length(DFCGorder[, i]) / lengthdfExpressions ))
 
         colnames(tempMatrix) <-
             as.character(dfCGunique[which(dfCGunique$gene %in% genes[i]), "cg"])
@@ -568,8 +574,8 @@ epimethex.analysis <- function(dfPancan, dfGpl, dfMethylation,
         colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "_")
 
         AnalysisIslands_PositionsCG(lengthIslands,i,islands,"island",dfCGunique,
-            genes,tempMatrix,stratification,dfPancan2,valExprGene,
-            dataLinear,lengthDfpancan)
+            genes,tempMatrix,stratification,dfExpressions2,valExprGene,
+            dataLinear,lengthdfExpressions)
     }
 
     if(plyr::empty(mFinaleCGisland) == FALSE) {
