@@ -69,8 +69,9 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
     nameFD <- paste(as.character(minRangeGene), as.character(maxRangeGene),
         sep = "-")
 
-    dir.create(file.path(getwd(), nameFD))
+    dir.create(file.path(getwd(), nameFD),showWarnings = FALSE)
 
+    dfGpl<-dfGpl[!(is.na(dfGpl$UCSC_RefGene_Name)|dfGpl$UCSC_RefGene_Name==""),]
     # create a new column `island` with the two columns collapsed together
     dfGpl$island <- apply(dfGpl[, c('Relation_to_UCSC_CpG_Island',
         'UCSC_CpG_Islands_Name')] ,1 , paste , collapse = "_")
@@ -239,8 +240,9 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         as.character(dfAnnotations$gene) %in% names(dfExpressions2))
 
     #remove genes and cg that aren't into dfExpressions2 from dfMethylation
+    colnames(dfMethylation)[1] <- "sample"
     dfMethylation <-subset(dfMethylation,
-        as.character(dfMethylation$sample) %in% dfAnnotations$cg)
+        as.character(dfMethylation$sample) %in% as.character(dfAnnotations$cg))
 
     maxOccurence <- max(as.data.frame(table(unlist(dfAnnotations$gene)))$Freq)
 
@@ -278,8 +280,8 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
     positions <- as.vector(unique(dfCGunique$position))
     genes <- colnames(DFCGorder)
     islands <- as.vector(unique(dfCGunique$island))
-    #remove islands that have values "NA_NA"
-    islands <- Filter(function(x) ! any(grepl("NA_NA", x)), islands)
+    #remove islands that have values "NA_NA" or "_" value
+    islands <- Filter(function(x) ! any(grepl("NA_NA|^_", x)), islands)
 
     stratification <- as.data.frame(rep(c("UP", "Medium", "Down"),
         each = lengthdfExpressions/3))
