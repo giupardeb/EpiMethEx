@@ -8,7 +8,7 @@ Functions
 }
 \usage{
 epimethex.analysis(dfExpressions, dfGpl, dfMethylation, minRangeGene,
-    maxRangeGene, numCores, dataLinear)
+maxRangeGene, numCores, dataGenesLinear, dataCGLinear)
 }
 \arguments{
 \item{dfExpressions}{data frame, expression of data}
@@ -23,7 +23,9 @@ epimethex.analysis(dfExpressions, dfGpl, dfMethylation, minRangeGene,
 
 \item{numCores}{Numeric, is the number of cores that you can use}
 
-\item{dataLinear}{Logic.}
+\item{dataGenesLinear}{Logic. determines if genetic data are linear}
+
+\item{dataCGLinear}{Logic. determines if methylation data are linear}
 }
 \value{
 files excel
@@ -63,6 +65,6 @@ Methylation <- data.frame(
     TCGA5 = c(0.1298, 0.0243, 0.8296),
     TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
 
-epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2, FALSE)
+epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE,FALSE)
 
 }

@@ -10,5 +10,5 @@ a tool for large-scale integrated analysis in methylation hotspots
 linked to genetic regulation
 }
 \author{
-Giuseppe
+Giuseppe Alessandro Parasiliti Palumbo
 }
