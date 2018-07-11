@@ -164,8 +164,7 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
                 # and methylation data with associated CG
 
                 mTmp <- as.data.frame(rep(dfPancan2[c(seq_len(lengthDfpancan)),
-                                                    genes[index]],
-                    length(cg)))
+                    genes[index]],length(cg)))
 
                 mTmp1 <- as.data.frame(tempMatrix2[seq_len(dim(mTmp)[1]),])
                 resultCorrTest <- psych::corr.test(mTmp, mTmp1, adjust = "none")
@@ -189,7 +188,7 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
 }
 
 # [START] This function computes the t-student test in genes
-# analysis when flag = F, and calculate Kolmogorov-Smirnov Tests otherwhise
+# analysis when flag = T, and calculate Kolmogorov-Smirnov Tests otherwhise
 calculateTtest <- function(array1, array2, flag) {
     difference <- sd(mapply('-', array1, array2, SIMPLIFY = TRUE), na.rm = TRUE)
 
@@ -206,10 +205,16 @@ calculateTtest <- function(array1, array2, flag) {
     else{
         #calculate Kolmogorov-Smirnov for cg analysis
         if (difference != 0 || is.na(difference)) {
-            tryCatch({
-                A <- ks.test(array1, array2)[c('p.value')]
-            }, error = function(error_condition) { A <- list(p.value = NA) })
+            A<-list()
+            A<-tryCatch({
+                return(ks.test(array1, array2)[c('p.value')])
+            }, error = function(error_condition) {
+                    A[["p.value"]] <- NA
+                    return(A)
+            })
             return(c(A$p.value))
+        }else{
+            return(c(NA))
         }
     }
 }

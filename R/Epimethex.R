@@ -5,7 +5,7 @@
 #'
 #' @docType package
 #'
-#' @author Giuseppe
+#' @author Giuseppe Alessandro Parasiliti Palumbo
 #'
 #' @name Epimethex
 NULL

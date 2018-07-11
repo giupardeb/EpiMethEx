@@ -6,7 +6,8 @@
 #' @param minRangeGene Numeric, lowerbound of genes
 #' @param maxRangeGene Numeric, upperbound of genes
 #' @param numCores Numeric, is the number of cores that you can use
-#' @param dataLinear Logic.
+#' @param dataGenesLinear Logic. determines if genetic data are linear
+#' @param dataCGLinear Logic. determines if methylation data are linear
 #'
 #' @import doParallel
 #' @import foreach
@@ -50,7 +51,7 @@
 #'     TCGA5 = c(0.1298, 0.0243, 0.8296),
 #'     TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
 #'
-#' epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2, FALSE)
+#' epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE,FALSE)
 #'
 #' @source Functions
 #'
@@ -58,7 +59,7 @@
 #'
 #' @export
 epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
-        minRangeGene, maxRangeGene, numCores, dataLinear) {
+        minRangeGene, maxRangeGene, numCores, dataGenesLinear, dataCGLinear) {
 
     NUM_ROW_ADDED_FROM_ANALYSIS <- 9
     NUM_ROW_ADDED_FROM_ANALYSIS_ISLANDS_POSITIONSCG <- 17
@@ -144,7 +145,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
     gc()
 
     #Compute combinations fold change (up vs mid, up vs down, etc..)
-    dfExpressions2 <- calcFC(dfExpressions2, dataLinear)
+    dfExpressions2 <- calcFC(dfExpressions2, dataGenesLinear)
 
     dimdfExpressions <- dim(dfExpressions2[, -ncol(dfExpressions2)])[2]
 
@@ -161,7 +162,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         calculateTtest(dfExpressions2[which(dfExpressions2$variable %in% "UP"),
             indexTmp],
         dfExpressions2[which(dfExpressions2$variable %in% "M"), indexTmp],
-            dataLinear)
+        dataGenesLinear)
     }
 
     resultUPvsDOWN <-
@@ -169,7 +170,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         calculateTtest(dfExpressions2[which(dfExpressions2$variable %in% "UP"),
             indexTmp],
         dfExpressions2[which(dfExpressions2$variable %in% "D"), indexTmp],
-            dataLinear)
+        dataGenesLinear)
     }
 
     resultMIDvsDOWN <-
@@ -177,7 +178,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         calculateTtest(dfExpressions2[which(dfExpressions2$variable %in% "M"),
             indexTmp],
         dfExpressions2[which(dfExpressions2$variable %in% "D"), indexTmp],
-            dataLinear)
+        dataGenesLinear)
     }
 
     parallel::stopCluster(cl)
@@ -342,7 +343,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
 
         if (length(tempMatrix) != 0) {
             tempMatrix <- cbind(tempMatrix, stratification)
-            tempMatrix <- Analysis(tempMatrix,dataLinear)
+            tempMatrix <- Analysis(tempMatrix,dataCGLinear)
             tempMatrix$stratification <- NULL
         } else{
             flag <- TRUE
@@ -431,10 +432,8 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
     row.names(mFinaleCGglobali)[nrow(mFinaleCGglobali)] <- "island"
     #[END]
     mFinaleCGglobali <- t(mFinaleCGglobali)
-
-    xlsx::write.xlsx( mFinaleCGglobali,
-        file.path(getwd(), nameFD, "CG_data_individually.xlsx"),
-        sheetName = "Sheet1")
+    write.csv(mFinaleCGglobali,file.path(getwd(),
+        nameFD,"CG_data_individually.csv"))
 
     remove(mFinaleCGglobali, tmp)
     gc()
@@ -473,17 +472,15 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
             num_row_m4 <- nrow(tempMatrix)
             tempMatrix <- cbind(tempMatrix, stratification)
             colnames(tempMatrix) <- c("value", "stratification")
-            tempMatrix <- Analysis(tempMatrix,dataLinear)
+            tempMatrix <- Analysis(tempMatrix,dataCGLinear)
             tempMatrix <- as.data.frame(tempMatrix[,-2])
 
             names(tempMatrix) <- "value"
 
             # [START] compute the correlation among gene[i] expression data and
             # methylation data of associated CG
-            dfTmp <-
-                as.data.frame(rep(dfExpressions2[
-                c(seq_len(lengthdfExpressions)), genes[i]],
-                num_CG))
+            dfTmp <- as.data.frame(rep(dfExpressions2[
+                c(seq_len(lengthdfExpressions)), genes[i]], num_CG))
 
             m4Tmp <- as.data.frame(tempMatrix[c(seq_len(num_row_m4)), ])
             resultCorrTest <- psych::corr.test(dfTmp, m4Tmp, adjust = "none")
@@ -510,10 +507,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
 
     mFinaleCGunificati <- setRowNames(mFinaleCGunificati)
     mFinaleCGunificati <- t(mFinaleCGunificati)
-
-    xlsx::write.xlsx( mFinaleCGunificati,
-        file.path(getwd(), nameFD, "CG_of_a_genes.xlsx"),
-            sheetName = "Sheet1")
+    write.csv(mFinaleCGunificati,file.path(getwd(), nameFD,"CG_of_a_genes.csv"))
 
     ###CG group by gene position
 
@@ -540,15 +534,15 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
 
         AnalysisIslands_PositionsCG(lengthPositions,i,positions,"position",
             dfCGunique,genes,tempMatrix,stratification,dfExpressions2,
-            valExprGene, dataLinear,lengthdfExpressions )
+            valExprGene, dataCGLinear,lengthdfExpressions )
     }
 
     if(plyr::empty(mFinaleCGposition) == FALSE){
 
         mFinaleCGposition <- setRowNames(mFinaleCGposition)
         mFinaleCGposition <- t(mFinaleCGposition)
-        xlsx::write.xlsx( mFinaleCGposition, file.path(getwd(), nameFD,
-            "CG_by_position.xlsx"), sheetName = "Sheet1")
+        write.csv(mFinaleCGposition,file.path(getwd(),
+            nameFD,"CG_by_position.csv"))
     }
     else{
         warning("CG_by_position.xlsx is not generated")
@@ -577,15 +571,15 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
 
         AnalysisIslands_PositionsCG(lengthIslands,i,islands,"island",dfCGunique,
             genes,tempMatrix,stratification,dfExpressions2,valExprGene,
-            dataLinear,lengthdfExpressions)
+            dataCGLinear,lengthdfExpressions)
     }
 
     if(plyr::empty(mFinaleCGisland) == FALSE) {
 
         mFinaleCGisland <- setRowNames(mFinaleCGisland)
         mFinaleCGisland <- t(mFinaleCGisland)
-        xlsx::write.xlsx(mFinaleCGisland, file.path(getwd(), nameFD,
-            "CG_by_islands.xlsx"), sheetName = "Sheet1")
+        write.csv(mFinaleCGisland,file.path(getwd(),
+            nameFD,"CG_by_islands.csv"))
     }
     else{
         warning("CG_by_islands.xlsx is not generated")
