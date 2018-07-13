@@ -2,6 +2,7 @@
 /dataset
 /cose utili
 .*
+*.Rproj
 *.json
 *.txt
 *.xlsx
