@@ -135,7 +135,7 @@ Analysis <- function(matrix1,dataLinear) {
 #Used for islands and positions cg grouping
 AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
     genes,tempMatrix,stratification,dfPancan2,valExprGene,
-    dataLinear, lengthDfpancan) {
+    testMethylation, lengthDfpancan) {
 
     mFinale <- data.frame(matrix())
 
@@ -157,7 +157,7 @@ AnalysisIslands_PositionsCG <- function(leng,index,position,column,dfCGunique,
                 tempMatrix2 <- cbind(tempMatrix2, stratification)
                 colnames(tempMatrix2) <- c("value", "stratification")
 
-                tempMatrix2 <- Analysis(tempMatrix2, dataLinear)
+                tempMatrix2 <- Analysis(tempMatrix2, testMethylation)
                 tempMatrix2 <- as.data.frame(tempMatrix2[, -2])
 
                 # [START] computes the correlation among gene[i] expression data
@@ -193,7 +193,7 @@ calculateTtest <- function(array1, array2, flag) {
     difference <- sd(mapply('-', array1, array2, SIMPLIFY = TRUE), na.rm = TRUE)
 
     if (flag) {
-        #calculate t_test for analysis genes
+        #calculate t-student test
         if (difference != 0) {
             A <- t.test(array1, array2, var.equal = FALSE)[c('statistic',
                 'p.value')]
@@ -203,7 +203,7 @@ calculateTtest <- function(array1, array2, flag) {
         }
     }
     else{
-        #calculate Kolmogorov-Smirnov for cg analysis
+        #calculate Kolmogorov-Smirnov test
         if (difference != 0 || is.na(difference)) {
             A<-list()
             A<-tryCatch({

@@ -1,8 +1,8 @@
 Package: EpiMethEx
 Type: Package
 Title: EpiMethEx Package
-Version: 0.99.3
-Date: 2018-07-10
+Version: 0.99.4
+Date: 2018-08-01
 Authors@R: c(person("Giuseppe Alessandro", "Parasiliti Palumbo", role = c("cre", "aut"), email = "giuseppeparasiliti93@gmail.com"),
                 person ("Giuseppe", "Sgroi", role = "aut", email = "giuseppesgroi@live.it"))
 Description: A tool for large-scale integrated analysis in methylation hotspots linked to genetic regulation.
@@ -11,7 +11,7 @@ URL: https://github.com/giupardeb/EpiMethEx
 Encoding: UTF-8
 LazyData: true
 biocViews: Epigenetics, GeneExpression, Software
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
 Imports: foreach, doParallel, miscTools, stats, utils, magrittr, parallel
 Suggests: matrixStats, psych, data.table, RcmdrMisc, plyr, testthat, knitr,
     rmarkdown
