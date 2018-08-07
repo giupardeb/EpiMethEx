@@ -4,8 +4,7 @@ The EpiMethEx package is under submission on bioconductor (https://github.com/Bi
 1. clone the repository
 2. execute `R CMD build EpiMethEx`
 3. install package into R: `install.packages(path_to_file, repos = NULL, type="source")`
-4. load library into R: `library(EpiMethEx)`
-5. create three datasets as in the example:
+4. create three datasets as in the example:
 
 ```R
  Annotations <- data.frame(
@@ -40,7 +39,7 @@ The EpiMethEx package is under submission on bioconductor (https://github.com/Bi
      TCGA5 = c(0.1298, 0.0243, 0.8296),
      TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
 ```
-5.1 or use the "curatedTCGAData" package:
+4.1 or use the "curatedTCGAData" package:
 ```R
 source("https://bioconductor.org/biocLite.R")
 BiocInstaller::biocLite("curatedTCGAData")
@@ -52,15 +51,16 @@ Expressions <- curatedTCGAData(diseaseCode = "SKCM", assays = "RNASeq2GeneNorm",
 ```
 it's most important to remember that curatedTCGAData doesn't allow to download dataset of Annotations,therefore it must be loaded manually through csv file or created ad hoc
 
-5.2 or use the csv file:
+4.2 or use the csv file:
 
 ```R
 Expression <- read.csv2("Expressions.csv", header = T,sep = ";",stringsAsFactors=FALSE)
 Annotations <- read.csv2("Annotations.csv",header = T,sep = ";",stringsAsFactors=FALSE)
 Methylation <- read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors=FALSE)
 ```
-6. Execute the following istruction:
+5. Execute the following istruction:
  ```R
+ library(EpiMethEx)
  epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE, TRUE, FALSE)
  ```
 
