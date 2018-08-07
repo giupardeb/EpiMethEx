@@ -40,7 +40,7 @@ The EpiMethEx package is under submission on bioconductor (https://github.com/Bi
      TCGA5 = c(0.1298, 0.0243, 0.8296),
      TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
 ```
-or use the "curatedTCGAData" package:
+5.1 or use the "curatedTCGAData" package:
 ```R
 source("https://bioconductor.org/biocLite.R")
 BiocInstaller::biocLite("curatedTCGAData")
@@ -52,7 +52,7 @@ Expressions <- curatedTCGAData(diseaseCode = "SKCM", assays = "RNASeq2GeneNorm",
 ```
 it's most important to remember that curatedTCGAData doesn't allow to download dataset of Annotations,therefore it must be loaded manually through csv file or created ad hoc
 
-or use the csv file:
+5.2 or use the csv file:
 
 ```R
 Expression <- read.csv2("Expressions.csv", header = T,sep = ";",stringsAsFactors=FALSE)
