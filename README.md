@@ -40,8 +40,29 @@ The EpiMethEx package is under submission on bioconductor (https://github.com/Bi
      TCGA5 = c(0.1298, 0.0243, 0.8296),
      TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
 ```
-5. Execute the following istruction:
- `R epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE,FALSE)`
+or use the "curatedTCGAData" package:
+```R
+source("https://bioconductor.org/biocLite.R")
+BiocInstaller::biocLite("curatedTCGAData")
+library(curatedTCGAData)
+library(MultiAssayExperiment)
+
+Methylation <- curatedTCGAData(diseaseCode = "SKCM", assays = "Methylation", dry.run = F)
+Expressions <- curatedTCGAData(diseaseCode = "SKCM", assays = "RNASeq2GeneNorm", dry.run = F)
+```
+it's most important to remember that curatedTCGAData doesn't allow to download dataset of Annotations,therefore it must be loaded manually through csv file or created ad hoc
+
+or use the csv file:
+
+```R
+Expression <- read.csv2("Expressions.csv", header = T,sep = ";",stringsAsFactors=FALSE)
+Annotations <- read.csv2("Annotations.csv",header = T,sep = ";",stringsAsFactors=FALSE)
+Methylation <- read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors=FALSE)
+```
+6. Execute the following istruction:
+ ```R
+ epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE, TRUE, FALSE)
+ ```
 
 # Parameters
 1. first parameter is a genes expression of data
