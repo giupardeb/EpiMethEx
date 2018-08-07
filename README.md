@@ -68,12 +68,11 @@ Methylation <- read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors
 1. first parameter is a genes expression of data
 2. Second parameter is Annotations of data
 3. Third parameter is Methylation of data
-4. Fourth parameter is a lowerbound of genes
-5. fifth parameter is a upperbound of genes
-6. sixth parameter, is the number of cores that you can use to analysis
-7. seventh parameter determines if genes expression of data are linear
-8. eighth parameter determines the test to apply on expression dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
-9. ninth parameter, determines the test to apply on methylation dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov tes
+4. Fourth parameter and  fifth parameter are the range of genes to consider
+5. sixth parameter, is the number of cores that you can use to analysis
+6. seventh parameter determines if genes expression of data are linear
+7. eighth parameter determines the test to apply on expression dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
+8. ninth parameter, determines the test to apply on methylation dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
 
 ### TESTING (System Configuration)
 * OS: Ubuntu 18.04 - 64 bit
