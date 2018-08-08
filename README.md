@@ -4,7 +4,9 @@ The EpiMethEx package is under submission on bioconductor (https://github.com/Bi
 1. clone the repository
 2. execute `R CMD build EpiMethEx`
 3. install package into R: `install.packages(path_to_file, repos = NULL, type="source")`
-4. create three datasets as in the example:
+4. create three datasets as in the example. 
+The example below is a extract of the datasets TCGA-SKCM 
+(https://xenabrowser.net/datapages/?cohort=TCGA%20Melanoma%20(SKCM)):
 
 ```R
  Annotations <- data.frame(
