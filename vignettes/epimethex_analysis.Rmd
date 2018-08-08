@@ -1,6 +1,9 @@
 ---
 title: "EpiMethEx Analysis"
-author: "Giuseppe Alessandro Parasiliti Palumbo, Giuseppe Sgroi"
+author: 
+    - name: "Saverio Candido,Giuseppe Alessandro Parasiliti Palumbo"
+    - name: "Marzio Pennisi,Giulia Russo,Giuseppe Sgroi,Valentina Di Salvatore"
+    - name: "Massimo Libra and Francesco Pappalardo"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
@@ -31,66 +34,125 @@ In particular, this analysis revealed a negative association between promoter
 hypomethylation and overexpression in a wide number of genes. Less frequently, 
 this overexpression was sustained by intragenic hypermethylation events.
 
+#Use Case
 Before to execute the analysis is necessary to create three 
-dataframes (gene expression data, methylation data, annotation data), 
-as well as in the example below:
+dataframes (gene expression data, methylation data, annotation data). 
+The example below is a extract of the datasets TCGA-SKCM
+(https://xenabrowser.net/datapages/?cohort=TCGA%20Melanoma%20(SKCM)):
 
 ##Expressions data Frame
 ```{r, echo=TRUE}
 data.frame(
-    sample = c("ARHGEF10L", "HIF3A", "RNF17"),
-    TCGA1 = c(-0.746592469762, -0.753826336325, -0.531035005853),
-    TCGA2 = c(-0.363492469762, -2.67922633632, -0.531035005853),
-    TCGA3 = c(-2.97279246976, 0.679073663675, -4.06262633632),
-    TCGA4 = c(-0.613189285993,-0.545547600468, 0.59499523215),
-    TCGA5 = c(-0.602787155677, -1.56558715568, 3.11398609442),
-    TCGA6 = c(0.323339547405, 0.268878821693, -1.62560252829),
+    'sample' = c("ARHGEF10L", "HIF3A", "RNF10"),
+    'TCGA-YD-A89C-06' = c(-0.746592469762, -0.753826336325, 0.4953280),
+    'TCGA-Z2-AA3V-06' = c(0.578807530238, -2.30662633632, 0.1023280),
+    'TCGA-EB-A3Y6-01' = c(-0.363492469762, -2.67922633632, -0.6147720),
+    'TCGA-EE-A3JA-06' = c(-2.97279246976, -3.61932633632, 0.02932801),
+    'TCGA-D9-A4Z2-01' = c(-0.128492469762, 0.679073663675, 0.4017280),
+    'TCGA-D3-A51G-06' = c(-0.4299925, -4.0626263, -1.0136720),
     stringsAsFactors=FALSE)
 ```
 ##Methylation data Frame
 ```{r, echo=TRUE}
 data.frame(
-    sample = c("cg1", "cg2", "cg3"),
-    TCGA1 = c(0.1290, 0.2394, 0.0913),
-    TCGA2 = c(0.9214, 0.0193, 0.0281),
-    TCGA3 = c(0.5925, 0.8948, 0.0720),
-    TCGA4 = c(0.9643, 0.7934, 0.0354),
-    TCGA5 = c(0.1298, 0.0243, 0.8296),
-    TCGA6 = c(0.8508, 0.8952, 0.9893),
+    'sample' = c("cg11663302", "cg01552731", "cg09081385"),
+    'TCGA-YD-A89C-06' = c(0.9856, 0.7681, 0.0407),
+    'TCGA-Z2-AA3V-06' = c(0.9863, 0.8551, 0.0244),
+    'TCGA-EB-A3Y6-01' = c(0.9876, 0.6473, 0.028),
+    'TCGA-EE-A3JA-06' = c(0.9826, 0.4587, 0.0343),
+    'TCGA-D9-A4Z2-01' = c(0.9881, 0.8509, 0.0215),
+    'TCGA-D3-A51G-06' = c(0.9774, 0.813, 0.0332),
     stringsAsFactors=FALSE)
 ```
 ##Annotations data Frame
 ```{r, echo=TRUE}
 data.frame(
-    ID = c("cg1","cg2", "cg3"),
-    Relation_to_UCSC_CpG_Island = c("N_Shore","S_Shelf","N_Shore"),
-    UCSC_CpG_Islands_Name = c("chrY:11-22","chrY:22-33","chrY:55-66"),
-    UCSC_RefGene_Accession = c("NM_00116441;NR_00155","NM_00468","NR_00292"),
-    Chromosome_36 = c("Y","Y","Y"),
-    Coordinate_36 = c("9973356","21151183","20123684"),
-    UCSC_RefGene_Name = c("ARHGEF10L;HIF3A","HIF3A","RNF17"),
-    UCSC_RefGene_Group = c("Body;TSS1500","Body","Body"),
+    ID = c("cg11663302","cg01552731", "cg09081385"),
+    Relation_to_UCSC_CpG_Island = c("Island","N_Shore","N_Shore"),
+    UCSC_CpG_Islands_Name=c("chr1:18023481-18023792","chr19:46806998-46807617",
+        "chr12:120972167-120972447"),
+    UCSC_RefGene_Accession = c("NM_001011722","NM_152794","NM_014868"),
+    Chromosome_36 = c("1","19","12"),
+    Coordinate_36 = c("17896255","51498747","119456453"),
+    UCSC_RefGene_Name = c("ARHGEF10L","HIF3A","RNF10"),
+    UCSC_RefGene_Group =c("Body","1stExon","TSS200"),
     stringsAsFactors=FALSE)
 ```
+or use the "curatedTCGAData" package:
+```{r, echo=TRUE, eval=FALSE}
+source("https://bioconductor.org/biocLite.R")
+BiocInstaller::biocLite("curatedTCGAData")
+library(curatedTCGAData)
+library(MultiAssayExperiment)
 
+Methylation <-
+    curatedTCGAData(diseaseCode = "SKCM",
+        assays = "Methylation",
+        dry.run = F)
+Expressions <-
+    curatedTCGAData(diseaseCode = "SKCM",
+        assays = "RNASeq2GeneNorm",
+        dry.run = F)
+```
+it's most important to remember that curatedTCGAData doesn't allow to 
+download dataset of Annotations,therefore it must be loaded manually 
+through csv file or created ad hoc
+
+or use the csv file:
+
+```{r, echo=TRUE, eval=FALSE}
+Expression <-
+    read.csv2("Expressions.csv",header = T,sep = ";",stringsAsFactors = FALSE,
+        check.names = FALSE)
+Annotations <-
+    read.csv2("Annotations.csv",header = T,sep = ";",stringsAsFactors = FALSE,
+        check.names = FALSE)
+Methylation <-
+    read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors = FALSE,
+        check.names = FALSE)
+```
 Then you can execute:
 
 ```{r, eval=FALSE}
 library(Epimethex)
-epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2, TRUE, FALSE)
+epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
 ```
 
 ###Brief description of the parameters
-1. Expressions = data frame of expression data 
-2. Annotations = data frame of Annotations data
-3. Methylation = data frame ofMethylation data
-4. "1,5" = it is the range of genes to consider
-5. "2" = indicates the number of cores to use
-6. indicates whether the methylation data considered are 
-    linear(TRUE) or logarithmic(FALSE)
-7. indicates whether the genes data considered are 
-    linear(TRUE) or logarithmic(FALSE)
+1. First parameter is a genes expression of data.
+
+2. second parameter is Annotations of data.
+
+3. third parameter is Methylation of data.
+
+4. fourth parameter and  fifth parameter are the range of genes to consider.
+
+5. sixth parameter, is the number of cores that you can use to analysis.
+
+6. seventh parameter determines if genes expression of data are linear.
+
+7. eighth parameter determines the test to apply on expression dataset. 
+If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test.
+
+8. ninth parameter, determines the test to apply on methylation dataset.
+If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test.
 
 #Final Result
 
-the analysis will produce csv files
+The correlation analysis performed with EpiMethEx allows to obtain 4 different
+data matrices (.csv format) named “CG by Individually”, “CG by position”,
+“CG by Island” and “CG by genes” containing beta difference, mean, 
+r correlation coefficient, p value and fold change values obtained 
+by several statistical tests. Below are detailed the EpiMethEx data matrices:
+
+1. **CG by individually**: list of single CG probesets analyzed Individually 
+comparing Up, Medium Down gene expression groups. 
+
+2. **CG by position**: list of CG probesets grouped according to gene positions
+(TSS1500, TSS200, 3’UTR, 1stExon, Body and 5’UTR).
+
+3. **CG by island**: list of CG probesets grouped according to methylation 
+Island positions and adjacent Shore and Shelf regions of each gene.
+
+4. **CG by genes**: list of methylation groups containing all CG probesets 
+that refer to a specific gene.

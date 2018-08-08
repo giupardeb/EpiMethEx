@@ -23,45 +23,48 @@
 #' @import parallel
 #' @importFrom parallel makeCluster
 #' @importFrom parallel stopCluster
+#' @importFrom MultiAssayExperiment assay
 #'
 #' @examples
 #'
 #' Annotations <- data.frame(
-#'     ID = c("cg1","cg2", "cg3"),
-#'     Relation_to_UCSC_CpG_Island = c("N_Shore","S_Shelf","N_Shore"),
-#'     UCSC_CpG_Islands_Name = c("chrY:11-22","chrY:22-33","chrY:55-66"),
-#'     UCSC_RefGene_Accession = c("NM_00116441;NR_00155","NM_00468","NR_00292"),
-#'     Chromosome_36 = c("Y","Y","Y"),
-#'     Coordinate_36 = c("9973356","21151183","20123684"),
-#'     UCSC_RefGene_Name = c("ARHGEF10L;HIF3A","HIF3A","RNF17"),
-#'     UCSC_RefGene_Group = c("Body;TSS1500","Body","Body"),
-#'     stringsAsFactors=FALSE)
+#' ID = c("cg11663302","cg01552731", "cg09081385"),
+#' Relation_to_UCSC_CpG_Island = c("Island","N_Shore","N_Shore"),
+#' UCSC_CpG_Islands_Name = c("chr1:18023481-18023792","chr19:46806998-46807617",
+#' "chr12:120972167-120972447"),
+#' UCSC_RefGene_Accession = c("NM_001011722","NM_152794","NM_014868"),
+#' Chromosome_36 = c("1","19","12"),
+#' Coordinate_36 = c("17896255","51498747","119456453"),
+#' UCSC_RefGene_Name = c("ARHGEF10L","HIF3A","RNF10"),
+#' UCSC_RefGene_Group =c("Body","1stExon","TSS200"),
+#' stringsAsFactors=FALSE)
 #'
 #' Expressions <- data.frame(
-#'     sample = c("ARHGEF10L", "HIF3A", "RNF17"),
-#'     TCGA1 = c(-0.746592469762, -0.753826336325, -0.531035005853),
-#'     TCGA2 = c(-0.363492469762, -2.67922633632, -0.531035005853),
-#'     TCGA3 = c(-2.97279246976, 0.679073663675, -4.06262633632),
-#'     TCGA4 = c(-0.613189285993,-0.545547600468, 0.59499523215),
-#'     TCGA5 = c(-0.602787155677, -1.56558715568, 3.11398609442),
-#'     TCGA6 = c(0.323339547405, 0.268878821693, -1.62560252829),
-#'     stringsAsFactors=FALSE)
+#' 'sample' = c("ARHGEF10L", "HIF3A", "RNF10"),
+#' 'TCGA-YD-A89C-06' = c(-0.746592469762, -0.753826336325, 0.4953280),
+#' 'TCGA-Z2-AA3V-06' = c(0.578807530238, -2.30662633632, 0.1023280),
+#' 'TCGA-EB-A3Y6-01' = c(-0.363492469762, -2.67922633632, -0.6147720),
+#' 'TCGA-EE-A3JA-06' = c(-2.97279246976, -3.61932633632, 0.02932801),
+#' 'TCGA-D9-A4Z2-01' = c(-0.128492469762, 0.679073663675, 0.4017280),
+#' 'TCGA-D3-A51G-06' = c(-0.4299925, -4.0626263, -1.0136720),
+#' stringsAsFactors=FALSE)
 #'
 #' Methylation <- data.frame(
-#'     sample = c("cg1", "cg2", "cg3"),
-#'     TCGA1 = c(0.1290, 0.2394, 0.0913),
-#'     TCGA2 = c(0.9214, 0.0193, 0.0281),
-#'     TCGA3 = c(0.5925, 0.8948, 0.0720),
-#'     TCGA4 = c(0.9643, 0.7934, 0.0354),
-#'     TCGA5 = c(0.1298, 0.0243, 0.8296),
-#'     TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
+#' 'sample' = c("cg11663302", "cg01552731", "cg09081385"),
+#' 'TCGA-YD-A89C-06' = c(0.9856, 0.7681, 0.0407),
+#' 'TCGA-Z2-AA3V-06' = c(0.9863, 0.8551, 0.0244),
+#' 'TCGA-EB-A3Y6-01' = c(0.9876, 0.6473, 0.028),
+#' 'TCGA-EE-A3JA-06' = c(0.9826, 0.4587, 0.0343),
+#' 'TCGA-D9-A4Z2-01' = c(0.9881, 0.8509, 0.0215),
+#' 'TCGA-D3-A51G-06' = c(0.9774, 0.813, 0.0332),
+#' stringsAsFactors=FALSE)
 #'
-#' epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,
+#' epimethex.analysis(Expressions, Annotations, Methylation, 1, 3, 2,
 #' TRUE, TRUE, FALSE)
 #'
 #' @source Functions
 #'
-#' @return files excel
+#' @return csv files
 #'
 #' @export
 epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
@@ -71,8 +74,16 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
     NUM_ROW_ADDED_FROM_ANALYSIS <- 9
     NUM_ROW_ADDED_FROM_ANALYSIS_ISLANDS_POSITIONSCG <- 17
 
-    dfExpressions <- dfExpressions[minRangeGene:maxRangeGene,]
 
+    if(typeof(dfExpressions) == "S4"){
+        tmp1<-assay(dfExpressions)
+        rm(dfExpressions)
+        gc()
+        mode(tmp1) = "numeric"
+        dfExpressions <- data.frame(tmp1)
+    }
+
+    dfExpressions <- dfExpressions[minRangeGene:maxRangeGene,]
     # folder name where xml files will be saved
     nameFD <- paste(as.character(minRangeGene), as.character(maxRangeGene),
         sep = "-")
@@ -90,11 +101,17 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
 
     # transpose all but the first column (name)
     dfExpressions2 <- as.data.frame(t(dfExpressions[,-1]))
-    colnames(dfExpressions2) <- dfExpressions$sample
+    if("sample" %in% colnames(dfExpressions)) {
+        colnames(dfExpressions2) <- dfExpressions$sample
+    }else{
+        colnames(dfExpressions2) <- rownames(dfExpressions)
+    }
+
 
     #remove all genes that have all values equal to zero
     dfExpressions2 <- dfExpressions2[, which(!apply(
         dfExpressions2 == 0, 2, all))]
+    dfExpressions2<-na.omit(dfExpressions2)
 
     #indexTCGA contains all the sorted patient's genes
     indexTCGA <- data.frame(sapply(seq_along(dfExpressions2), function(x) {
@@ -247,6 +264,18 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
     dfAnnotations <- subset(dfAnnotations,
         as.character(dfAnnotations$gene) %in% names(dfExpressions2))
 
+    if(typeof(dfMethylation) == "S4"){
+
+        dftmp1<-MultiAssayExperiment::assay(dfMethylation)
+        mode(dftmp1) = "numeric"
+        rm(dfMethylation)
+        dfMethylation <- as.data.frame(dftmp1)
+        rm(dftmp1)
+        dfMethylation <- cbind(sample=rownames(dfMethylation),
+            dfMethylation, row.names = NULL)
+    }
+
+    dfMethylation<-na.omit(dfMethylation)
     #remove genes and cg that aren't into dfExpressions2 from dfMethylation
     colnames(dfMethylation)[1] <- "sample"
     dfMethylation <-subset(dfMethylation,
@@ -360,8 +389,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
 
         if (length(columnNA) != 0) {
             for (j in seq_len(length(columnNA))) {
-                tempMatrix <-
-                insertCol(as.matrix(tempMatrix), columnNA[[j]], v = NA)
+                tempMatrix<-insertCol(as.matrix(tempMatrix),columnNA[[j]],v=NA)
             }
         }
 
@@ -550,8 +578,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         mFinaleCGposition <- t(mFinaleCGposition)
         write.csv(mFinaleCGposition,file.path(getwd(),
             nameFD,"CG_by_position.csv"))
-    }
-    else{
+    }else{
         warning("CG_by_position.xlsx is not generated")
     }
 
