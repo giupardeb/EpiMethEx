@@ -78,6 +78,10 @@ Methylation <- read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors
 7. eighth parameter determines the test to apply on expression dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
 8. ninth parameter, determines the test to apply on methylation dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
 
+### HOW TO FILTER
+
+To further evaluate the biological significance of the methylation hotspots involved in gene regulation mechanisms, is possible to filter EpiMethEx output with an additional R script (https://github.com/giupardeb/EpiMethEx-Filter)
+
 ### TESTING (System Configuration)
 * OS: Ubuntu 18.04 - 64 bit
 * CPU: 8 Cores
