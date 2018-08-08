@@ -4,8 +4,7 @@ The EpiMethEx package is under submission on bioconductor (https://github.com/Bi
 1. clone the repository
 2. execute `R CMD build EpiMethEx`
 3. install package into R: `install.packages(path_to_file, repos = NULL, type="source")`
-4. load library into R: `library(EpiMethEx)`
-5. create three datasets as in the example:
+4. create three datasets as in the example:
 
 ```R
  Annotations <- data.frame(
@@ -40,18 +39,41 @@ The EpiMethEx package is under submission on bioconductor (https://github.com/Bi
      TCGA5 = c(0.1298, 0.0243, 0.8296),
      TCGA6 = c(0.8508, 0.8952, 0.9893),stringsAsFactors=FALSE)
 ```
+4.1 or use the "curatedTCGAData" package:
+```R
+source("https://bioconductor.org/biocLite.R")
+BiocInstaller::biocLite("curatedTCGAData")
+library(curatedTCGAData)
+library(MultiAssayExperiment)
+
+Methylation <- curatedTCGAData(diseaseCode = "SKCM", assays = "Methylation", dry.run = F)
+Expressions <- curatedTCGAData(diseaseCode = "SKCM", assays = "RNASeq2GeneNorm", dry.run = F)
+```
+it's most important to remember that curatedTCGAData doesn't allow to download dataset of Annotations,therefore it must be loaded manually through csv file or created ad hoc
+
+4.2 or use the csv file:
+
+```R
+Expression <- read.csv2("Expressions.csv", header = T,sep = ";",stringsAsFactors=FALSE)
+Annotations <- read.csv2("Annotations.csv",header = T,sep = ";",stringsAsFactors=FALSE)
+Methylation <- read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors=FALSE)
+```
 5. Execute the following istruction:
- `R epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE,FALSE)`
+ ```R
+ library(EpiMethEx)
+ epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE, TRUE, FALSE)
+ ```
 
 # Parameters
 1. first parameter is a genes expression of data
 2. Second parameter is Annotations of data
 3. Third parameter is Methylation of data
-4. Fourth parameter is a lowerbound of genes
-5. fifth parameter is a upperbound of genes
-6. sixth parameter, is the number of cores that you can use to analysis
-7. seventh parameter determines if genes expression of data are linear
-8. eighth parameter determines if methylation data are linear
+4. Fourth parameter and  fifth parameter are the range of genes to consider
+5. sixth parameter, is the number of cores that you can use to analysis
+6. seventh parameter determines if genes expression of data are linear
+7. eighth parameter determines the test to apply on expression dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
+8. ninth parameter, determines the test to apply on methylation dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
+
 ### TESTING (System Configuration)
 * OS: Ubuntu 18.04 - 64 bit
 * CPU: 8 Cores
