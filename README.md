@@ -65,7 +65,7 @@ Methylation <- read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors
 5. Execute the following istruction:
  ```R
  library(EpiMethEx)
- epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE, TRUE, FALSE)
+ epimethex.analysis(Expressions, Annotations, Methylation, 1, 3, 2,TRUE, TRUE, FALSE)
  ```
 
 # Parameters
