@@ -79,7 +79,7 @@ library(EpiMethEx)
 epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
 ```
 or use the "curatedTCGAData" package:
-```{r, echo=TRUE, eval=FALSE}
+```{r, echo=TRUE, results="hide", warning=FALSE}
 source("https://bioconductor.org/biocLite.R")
 BiocInstaller::biocLite("curatedTCGAData")
 library(curatedTCGAData)
@@ -94,29 +94,25 @@ Expressions <-
         assays = "RNASeq2GeneNorm",
         dry.run = F)
 
+##Annotations data Frame
+Annotations <- data.frame(
+    ID = c("cg11663302","cg01552731", "cg09081385"),
+    Relation_to_UCSC_CpG_Island = c("Island","N_Shore","N_Shore"),
+    UCSC_CpG_Islands_Name=c("chr1:18023481-18023792","chr19:46806998-46807617",
+        "chr12:120972167-120972447"),
+    UCSC_RefGene_Accession = c("NM_001011722","NM_152794","NM_014868"),
+    Chromosome_36 = c("1","19","12"),
+    Coordinate_36 = c("17896255","51498747","119456453"),
+    UCSC_RefGene_Name = c("ARHGEF10L","HIF3A","RNF10"),
+    UCSC_RefGene_Group =c("Body","1stExon","TSS200"),
+    stringsAsFactors=FALSE)
+
 library(EpiMethEx)
 epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
 ```
 **it's most important** to remember that curatedTCGAData doesn't allow to 
 download dataset of Annotations,therefore it must be loaded manually 
 through csv file or created ad hoc.
-
-or use the csv file:
-
-```{r, echo=TRUE, eval=FALSE}
-Expressions <-
-    read.csv2("Expressions.csv",header = T,sep = ";",stringsAsFactors = FALSE,
-        check.names = FALSE)
-Annotations <-
-    read.csv2("Annotations.csv",header = T,sep = ";",stringsAsFactors = FALSE,
-        check.names = FALSE)
-Methylation <-
-    read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors = FALSE,
-        check.names = FALSE)
-
-library(EpiMethEx)
-epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
-```
 
 ### Brief description of the parameters
 1. First parameter is a genes expression of data.
@@ -139,7 +135,7 @@ If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test.
 
 # Final Result
 
-The correlation analysis performed with EpiMethEx allows to obtain 4 different
+The correlation analysis performed with EpiMethEx allows to obtain 4 different 
 data matrices (.csv format) named “CG by Individually”, “CG by position”,
 “CG by Island” and “CG by genes” containing beta difference, mean,
 r correlation coefficient, p value and fold change values obtained
