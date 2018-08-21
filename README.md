@@ -4,7 +4,9 @@ The EpiMethEx package is under submission on bioconductor (https://github.com/Bi
 1. clone the repository
 2. execute `R CMD build EpiMethEx`
 3. install package into R: `install.packages(path_to_file, repos = NULL, type="source")`
-4. create three datasets as in the example:
+4. create three datasets as in the example. 
+The example below is a extract of the datasets TCGA-SKCM 
+(https://xenabrowser.net/datapages/?cohort=TCGA%20Melanoma%20(SKCM)):
 
 ```R
  Annotations <- data.frame(
@@ -63,7 +65,7 @@ Methylation <- read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors
 5. Execute the following istruction:
  ```R
  library(EpiMethEx)
- epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,TRUE, TRUE, FALSE)
+ epimethex.analysis(Expressions, Annotations, Methylation, 1, 3, 2,TRUE, TRUE, FALSE)
  ```
 
 # Parameters
@@ -75,6 +77,10 @@ Methylation <- read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors
 6. seventh parameter determines if genes expression of data are linear
 7. eighth parameter determines the test to apply on expression dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
 8. ninth parameter, determines the test to apply on methylation dataset. If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test
+
+### HOW TO FILTER
+
+To further evaluate the biological significance of the methylation hotspots involved in gene regulation mechanisms, is possible to filter EpiMethEx output with an additional R script (https://github.com/giupardeb/EpiMethEx-Filter)
 
 ### TESTING (System Configuration)
 * OS: Ubuntu 18.04 - 64 bit
