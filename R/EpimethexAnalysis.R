@@ -579,7 +579,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         write.csv(mFinaleCGposition,file.path(getwd(),
             nameFD,"CG_by_position.csv"))
     }else{
-        warning("CG_by_position.xlsx is not generated")
+        warning("CG_by_position.csv is not generated")
     }
 
     #CG group by island CpG
@@ -616,6 +616,6 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
             nameFD,"CG_by_islands.csv"))
     }
     else{
-        warning("CG_by_islands.xlsx is not generated")
+        warning("CG_by_islands.csv is not generated")
     }
 }

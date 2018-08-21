@@ -73,7 +73,7 @@ Methylation <- data.frame(
 'TCGA-D3-A51G-06' = c(0.9774, 0.813, 0.0332),
 stringsAsFactors=FALSE)
 
-epimethex.analysis(Expressions, Annotations, Methylation, 1, 5, 2,
+epimethex.analysis(Expressions, Annotations, Methylation, 1, 3, 2,
 TRUE, TRUE, FALSE)
 
 }

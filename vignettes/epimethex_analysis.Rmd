@@ -7,7 +7,7 @@ author:
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-    %\VignetteIndexEntry{Vignette Title}
+    %\VignetteIndexEntry{EpiMethEx Analysis}
     %\VignetteEngine{knitr::rmarkdown}
     %\VignetteEncoding{UTF-8}
 ---
@@ -40,9 +40,11 @@ dataframes (gene expression data, methylation data, annotation data).
 The example below is a extract of the datasets TCGA-SKCM
 (https://xenabrowser.net/datapages/?cohort=TCGA%20Melanoma%20(SKCM)):
 
+```{r, echo=TRUE, results="hide", warning=FALSE}
+
 ##Expressions data Frame
-```{r, echo=TRUE}
-data.frame(
+
+Expressions <- data.frame(
     'sample' = c("ARHGEF10L", "HIF3A", "RNF10"),
     'TCGA-YD-A89C-06' = c(-0.746592469762, -0.753826336325, 0.4953280),
     'TCGA-Z2-AA3V-06' = c(0.578807530238, -2.30662633632, 0.1023280),
@@ -51,10 +53,10 @@ data.frame(
     'TCGA-D9-A4Z2-01' = c(-0.128492469762, 0.679073663675, 0.4017280),
     'TCGA-D3-A51G-06' = c(-0.4299925, -4.0626263, -1.0136720),
     stringsAsFactors=FALSE)
-```
+write.csv2(Expressions, "Expressions.csv")
 ##Methylation data Frame
-```{r, echo=TRUE}
-data.frame(
+
+Methylation <- data.frame(
     'sample' = c("cg11663302", "cg01552731", "cg09081385"),
     'TCGA-YD-A89C-06' = c(0.9856, 0.7681, 0.0407),
     'TCGA-Z2-AA3V-06' = c(0.9863, 0.8551, 0.0244),
@@ -63,10 +65,12 @@ data.frame(
     'TCGA-D9-A4Z2-01' = c(0.9881, 0.8509, 0.0215),
     'TCGA-D3-A51G-06' = c(0.9774, 0.813, 0.0332),
     stringsAsFactors=FALSE)
-```
+
+write.csv2(Methylation, "Methylation.csv")
+
 ##Annotations data Frame
-```{r, echo=TRUE}
-data.frame(
+
+Annotations <- data.frame(
     ID = c("cg11663302","cg01552731", "cg09081385"),
     Relation_to_UCSC_CpG_Island = c("Island","N_Shore","N_Shore"),
     UCSC_CpG_Islands_Name=c("chr1:18023481-18023792","chr19:46806998-46807617",
@@ -77,6 +81,11 @@ data.frame(
     UCSC_RefGene_Name = c("ARHGEF10L","HIF3A","RNF10"),
     UCSC_RefGene_Group =c("Body","1stExon","TSS200"),
     stringsAsFactors=FALSE)
+
+write.csv2(Annotations, "Annotations.csv")
+
+library(EpiMethEx)
+epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
 ```
 or use the "curatedTCGAData" package:
 ```{r, echo=TRUE, eval=FALSE}
@@ -93,15 +102,18 @@ Expressions <-
     curatedTCGAData(diseaseCode = "SKCM",
         assays = "RNASeq2GeneNorm",
         dry.run = F)
+
+library(EpiMethEx)
+epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
 ```
 it's most important to remember that curatedTCGAData doesn't allow to 
 download dataset of Annotations,therefore it must be loaded manually 
-through csv file or created ad hoc
+through csv file or created ad hoc.
 
 or use the csv file:
 
 ```{r, echo=TRUE, eval=FALSE}
-Expression <-
+Expressions <-
     read.csv2("Expressions.csv",header = T,sep = ";",stringsAsFactors = FALSE,
         check.names = FALSE)
 Annotations <-
@@ -110,14 +122,13 @@ Annotations <-
 Methylation <-
     read.csv2("Methylation.csv",header = T,sep = ";",stringsAsFactors = FALSE,
         check.names = FALSE)
-```
-Then you can execute:
 
-```{r, eval=FALSE}
-library(Epimethex)
+library(EpiMethEx)
 epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
 ```
-
+```{r, echo=TRUE}
+getwd()
+```
 ###Brief description of the parameters
 1. First parameter is a genes expression of data.
 
@@ -141,8 +152,8 @@ If TRUE will apply t-student test, otherwise will apply Kolmogorov-Smirnov test.
 
 The correlation analysis performed with EpiMethEx allows to obtain 4 different
 data matrices (.csv format) named “CG by Individually”, “CG by position”,
-“CG by Island” and “CG by genes” containing beta difference, mean, 
-r correlation coefficient, p value and fold change values obtained 
+“CG by Island” and “CG by genes” containing beta difference, mean,
+r correlation coefficient, p value and fold change values obtained
 by several statistical tests. Below are detailed the EpiMethEx data matrices:
 
 1. **CG by individually**: list of single CG probesets analyzed Individually 
