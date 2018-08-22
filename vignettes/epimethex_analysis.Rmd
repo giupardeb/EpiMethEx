@@ -37,8 +37,8 @@ this overexpression was sustained by intragenic hypermethylation events.
 # Use Case
 Before to execute the analysis is necessary to create three 
 dataframes (gene expression data, methylation data, annotation data). 
-The example below is a extract of the datasets TCGA-SKCM
-(https://xenabrowser.net/datapages/?cohort=TCGA%20Melanoma%20(SKCM)):
+The example below is a extract of the datasets
+[TCGA-SKCM](https://xenabrowser.net/datapages/?cohort=TCGA%20Melanoma%20(SKCM)):
 
 ```{r, echo=TRUE, results="hide", warning=FALSE}
 ## Expressions data Frame
@@ -78,40 +78,14 @@ Annotations <- data.frame(
 library(EpiMethEx)
 epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
 ```
-or use the "curatedTCGAData" package:
-```{r, echo=TRUE, results="hide", warning=FALSE}
-source("https://bioconductor.org/biocLite.R")
-BiocInstaller::biocLite("curatedTCGAData")
-library(curatedTCGAData)
-library(MultiAssayExperiment)
 
-Methylation <-
-    curatedTCGAData(diseaseCode = "SKCM",
-        assays = "Methylation",
-        dry.run = F)
-Expressions <-
-    curatedTCGAData(diseaseCode = "SKCM",
-        assays = "RNASeq2GeneNorm",
-        dry.run = F)
+or use the "curatedTCGAData" package, click
+[here](https://bioconductor.org/packages/release/data/experiment/vignettes/curatedTCGAData/inst/doc/curatedTCGAData.html)
+to see how to install and use the package.
 
-##Annotations data Frame
-Annotations <- data.frame(
-    ID = c("cg11663302","cg01552731", "cg09081385"),
-    Relation_to_UCSC_CpG_Island = c("Island","N_Shore","N_Shore"),
-    UCSC_CpG_Islands_Name=c("chr1:18023481-18023792","chr19:46806998-46807617",
-        "chr12:120972167-120972447"),
-    UCSC_RefGene_Accession = c("NM_001011722","NM_152794","NM_014868"),
-    Chromosome_36 = c("1","19","12"),
-    Coordinate_36 = c("17896255","51498747","119456453"),
-    UCSC_RefGene_Name = c("ARHGEF10L","HIF3A","RNF10"),
-    UCSC_RefGene_Group =c("Body","1stExon","TSS200"),
-    stringsAsFactors=FALSE)
 
-library(EpiMethEx)
-epimethex.analysis(Expressions,Annotations,Methylation,1,3,2,TRUE,TRUE,FALSE)
-```
-**it's most important** to remember that curatedTCGAData doesn't allow to 
-download dataset of Annotations,therefore it must be loaded manually 
+**It's most important** to remember that curatedTCGAData doesn't allow to 
+download dataset of Annotations, therefore it must be loaded manually 
 through csv file or created ad hoc.
 
 ### Brief description of the parameters
