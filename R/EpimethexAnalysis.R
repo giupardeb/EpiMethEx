@@ -491,7 +491,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         tempMatrix <- tempMatrix [!keep.cols]
         #[END]
 
-        colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "||")
+        colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "~")
 
         tempMatrix <-
             as.data.frame(tempMatrix[,
@@ -527,14 +527,14 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
             tempMatrix <- as.data.frame(tempMatrix[-c(seq_len(num_row_m4)),])
             tempMatrix <- data.frame(sapply(tempMatrix, c,
                 unlist(valExprGene[, genes[i]])), row.names = NULL)
-            colnames(tempMatrix) <- paste("CG", genes[i], sep = "||")
+            colnames(tempMatrix) <- paste("CG", genes[i], sep = "~")
             remove(dfTmp, m4Tmp, resultCorrTest)
 
             tempMatrix
         } else{
             tempMatrix <- as.data.frame(matrix(NA,
             nrow = NUM_ROW_ADDED_FROM_ANALYSIS_ISLANDS_POSITIONSCG, ncol = 1))
-            colnames(tempMatrix) <- paste("CG", genes[i], sep = "||")
+            colnames(tempMatrix) <- paste("CG", genes[i], sep = "~")
 
             tempMatrix
         }
@@ -565,7 +565,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         tempMatrix <- tempMatrix [!keep.cols]
         #[END]
 
-        colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "||")
+        colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "~")
 
         AnalysisIslands_PositionsCG(lengthPositions,i,positions,"position",
             dfCGunique,genes,tempMatrix,stratification,dfExpressions2,
@@ -601,7 +601,7 @@ epimethex.analysis <- function(dfExpressions, dfGpl, dfMethylation,
         tempMatrix <- tempMatrix [!keep.cols]
         #[END]
 
-        colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "||")
+        colnames(tempMatrix) <- paste(names(tempMatrix), genes[i], sep = "~")
 
         AnalysisIslands_PositionsCG(lengthIslands,i,islands,"island",dfCGunique,
             genes,tempMatrix,stratification,dfExpressions2,valExprGene,
